@@ -47,9 +47,13 @@ src/data/
 ├── esg.json
 ├── osint_events.json
 ├── portfolio.json
-├── scenarios.json      (tuỳ chọn)
-└── private_sample.json (DN chưa niêm yết mẫu cho Cổng 2)
+├── scenarios.json      (kịch bản cho slider – đã tạo, 2 kịch bản)
+├── private_sample.json (DN chưa niêm yết mẫu cho Cổng 2 – đã tạo, toàn TODO)
+└── methodology.json    (tham số chung mục 1 – đã tạo)
 ```
+
+> Tất cả file trên **đã có trong repo**. Quy ước: ô chưa có số liệu ghi đúng chuỗi `"TODO"` (UI hiển thị "—"); không điền số ước lượng. Kiểu TypeScript: `Todo<T> = T | "TODO"` trong `src/lib/types.ts`.
+> Sau khi sửa số liệu, chạy `npm test` – unit test kiểm tra Σwᵢ = 1, ràng buộc 15–55%, RFin,Total và lợi nhuận danh mục khớp bảng mục 2.
 
 ### `companies.json`
 ```json
@@ -66,6 +70,8 @@ src/data/
   }
 ]
 ```
+
+Giá trị trong repo: SAB = "Tổng CTCP Bia - Rượu - Nước giải khát Sài Gòn" (Đồ uống), MCM = "CTCP Giống bò sữa Mộc Châu" (Sữa), SBT = "CTCP Thành Thành Công - Biên Hòa" (Đường). `exchange` của **MCM đang là `"TODO"`** – cần xác nhận sàn niêm yết.
 
 ### `zscore.json`
 ```json
@@ -103,7 +109,7 @@ src/data/
   }
 }
 ```
-`greenwashingRisk`: `"low" | "medium" | "high"`; `contradiction`: 0–1 (điểm mâu thuẫn do NLP trả về – mock).
+`greenwashingRisk`: `"low" | "medium" | "high"` (hoặc `"TODO"` – hiện VNM, SAB, SBT chưa có; chỉ MCM = `"high"`); `evidence` có thể là mảng rỗng (UI hiện "Chưa có cặp bằng chứng đối chiếu"); `contradiction`: 0–1 (điểm mâu thuẫn do NLP trả về – mock).
 
 ### `osint_events.json`
 ```json
@@ -123,6 +129,7 @@ src/data/
 ]
 ```
 `type`: `"tax" | "environment" | "securities" | "media"`; `severity`: 1 | 2 | 3.
+`date`: `"YYYY-MM"`; nếu nguồn chưa rõ tháng ghi `"YYYY-TODO"` → UI đặt chấm vào cột "Chưa rõ" của timeline và hiện "2022 (chưa rõ tháng)". POSINT của DN = tổng `penalty` các sự kiện `active: true`.
 
 ### `portfolio.json`
 ```json
@@ -157,7 +164,33 @@ src/data/
   { "params": { "alpha": 1, "beta": 1, "gamma": 1, "delta": 1 }, "weights": { "VNM": 0.509, "SAB": 0.191, "MCM": 0.15, "SBT": 0.15 } }
 ]
 ```
-Chạy code Python với ~10–20 bộ tham số để sinh file này; UI chọn bộ gần nhất với vị trí slider.
+Chạy code Python với ~10–20 bộ tham số để sinh file này; UI chọn bộ gần nhất với vị trí slider (khoảng cách Euclid trên α β γ δ). Lợi nhuận kỳ vọng / thực tế của mỗi kịch bản được UI tính lại bằng Σ wᵢ × Rᵢ từ `companies.json`, nên file chỉ cần `params` + `weights`.
+
+### `private_sample.json` (Cổng 2 – kết quả mẫu DN chưa niêm yết)
+```json
+{
+  "company": { "name": "Doanh nghiệp F&B chưa niêm yết (mẫu)", "subsector": "TODO", "listed": false, "fiscalYear": "TODO" },
+  "zscore": { "model": "Z'", "x1": "TODO", "x2": "TODO", "x3": "TODO", "x4": "TODO", "x5": "TODO", "z": "TODO", "zone": "TODO", "rfinBase": "TODO" },
+  "esg": { "esgScore": "TODO", "pillars": { "E": "TODO", "S": "TODO", "G": "TODO", "transparency": "TODO", "compliance": "TODO" }, "greenwashingRisk": "TODO", "evidence": [] },
+  "events": [],
+  "posint": "TODO"
+}
+```
+API trả thêm `"deletedAt": "<ISO timestamp>"` (thời điểm xoá tệp gốc) – bản mock tự gán khi xử lý xong. Mô hình **Z'** = `0,717X1 + 0,847X2 + 3,107X3 + 0,420X4 + 0,998X5`; vùng Safe > 2,90 · Grey 1,23–2,90 · Distress < 1,23 (Altman 1983 – cần nhóm tài chính xác nhận).
+
+### `methodology.json` (tham số chung – mục 1)
+```json
+{
+  "riskFree": { "value": 0.0277, "source": "TPCP 10 năm – VIS Rating" },
+  "equityRiskPremium": { "value": 0.0835, "source": "Damodaran – NYU Stern 2025" },
+  "capm": "Ri = Rf + βi × ERP",
+  "altman": "Z = 1,2X1 + 1,4X2 + 3,3X3 + 0,6X4 + 1,0X5",
+  "altmanZones": "Safe > 2,99 · Grey 1,81–2,99 · Distress < 1,81",
+  "posintTiers": "Mức 1 = +0,05 · Mức 2 = +0,10 · Mức 3 ≥ +0,20",
+  "dataSource": "Phụ lục B – Hồ sơ Vòng 1"
+}
+```
+Dùng cho mục "Phương pháp & nguồn dữ liệu" của báo cáo thẩm định.
 
 ## 4. Endpoint tương lai (Vòng 2)
 
@@ -168,5 +201,20 @@ Chạy code Python với ~10–20 bộ tham số để sinh file này; UI chọn
 | GET | `/api/v1/companies/{ticker}/esg` | 1 phần tử của `esg.json` |
 | GET | `/api/v1/companies/{ticker}/osint?months=36` | lọc `osint_events.json` |
 | POST | `/api/v1/portfolio/optimize` body `{ tickers, params, constraints, solver }` | `portfolio.json` |
-| POST | `/api/v1/private/analyze` (multipart) | kết quả dạng Cổng 1 + `{ deletedAt }` |
+| POST | `/api/v1/private/analyze` (multipart, field `file`) | dạng `private_sample.json` + `{ deletedAt }` |
+| GET | `/api/v1/methodology` | `methodology.json` |
 | GET | `/api/v1/reports/{ticker}` | dữ liệu báo cáo |
+
+## 5. Danh sách ô `TODO` cần nhóm tài chính điền
+
+| File | Trường | Ảnh hưởng trên UI |
+|---|---|---|
+| `zscore.json` | `x1`–`x5` của cả 4 DN | Bảng X1–X5 (Cổng 1, báo cáo) hiện "—" |
+| `esg.json` | `pillars` (E, S, G, Minh bạch, Tuân thủ) của cả 4 DN | Radar ESG hiện trạng thái rỗng |
+| `esg.json` | `greenwashingRisk` của VNM, SAB, SBT | Badge "Rủi ro tẩy xanh: —" |
+| `esg.json` | MCM `evidence[].claim`, `claimSource`, `taxonomyRef` | Cột "Doanh nghiệp tuyên bố" còn chữ TODO |
+| `osint_events.json` | Tháng của sự kiện MCM (`2022-TODO`) | Timeline đặt ở cột "Chưa rõ" |
+| `companies.json` | `exchange` của MCM | "Sàn —" |
+| `portfolio.json` | `params` α β γ δ, `qubo.matrix` 16×16 | Heatmap QUBO rỗng |
+| `scenarios.json` | Thêm 10–20 kịch bản từ code Python | Slider chỉ nhảy giữa 2 kịch bản |
+| `private_sample.json` | Toàn bộ | Kết quả Cổng 2 hiện "—" |

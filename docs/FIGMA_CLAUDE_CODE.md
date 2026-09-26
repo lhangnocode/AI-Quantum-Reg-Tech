@@ -36,6 +36,14 @@ https://www.figma.com/design/<fileKey>/QuantumRegTech?node-id=12-345
 
 Tài khoản của bạn cần **quyền xem** file đó (file của thành viên khác → nhờ họ share cho email Figma của bạn).
 
+### Link Figma Make (`figma.com/make/...`)
+Figma Make là bản prototype dạng **code React**, không phải frame. Link dạng `https://www.figma.com/make/<fileKey>/<tên>` **không cần `node-id`** – Claude đọc được toàn bộ source (`src/app/App.tsx`, theme CSS…) rồi chuyển sang stack của dự án.
+
+Kinh nghiệm từ lần dựng Dashboard (file "Design-QuantumRegTech-Dashboard"):
+- Code Make thường dùng **số liệu tự tạo** và màu hex cứng → khi chuyển sang code phải thay bằng dữ liệu từ `api.ts` và token trong `globals.css` (các khác biệt đã ghi ở `UI_DESIGN.md` §4.1).
+- Make không đọc tài liệu dự án → dễ sai quy tắc (ngưỡng Altman, nhãn "Quantum" khi chưa chạy lượng tử). Nên dán các quy tắc chính trong `CLAUDE.md` vào prompt của Make.
+- `get_screenshot` / `get_metadata` không hỗ trợ file Make; để so khớp, chạy app rồi chụp màn hình (Playwright) và đặt cạnh bản xem trước trong Make.
+
 ## 3. Câu lệnh mẫu trong Claude Code
 
 **Xem thiết kế (chỉ đọc):**
