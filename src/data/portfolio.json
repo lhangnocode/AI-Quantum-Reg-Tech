@@ -1,0 +1,21 @@
+{
+  "capital": 100000000000,
+  "constraints": { "minWeight": 0.15, "maxWeight": 0.55 },
+  "params": { "alpha": "TODO", "beta": "TODO", "gamma": "TODO", "delta": "TODO" },
+  "solver": "classical-cobyla",
+  "esgAware": {
+    "weights": { "VNM": 0.509, "SAB": 0.191, "MCM": 0.15, "SBT": 0.15 },
+    "expectedReturn": 0.085,
+    "realizedReturn": 0.1596
+  },
+  "baseline": {
+    "weights": { "VNM": 0.15, "SAB": 0.55, "MCM": 0.15, "SBT": 0.15 },
+    "expectedReturn": 0.0931,
+    "realizedReturn": 0.1186
+  },
+  "qubo": {
+    "bitsPerAsset": 4,
+    "numQubits": 16,
+    "matrix": "TODO – 16×16, xuất từ code Python"
+  }
+}

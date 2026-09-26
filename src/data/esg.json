@@ -1,0 +1,36 @@
+{
+  "VNM": {
+    "esgScore": 0.5759,
+    "pillars": { "E": "TODO", "S": "TODO", "G": "TODO", "transparency": "TODO", "compliance": "TODO" },
+    "greenwashingRisk": "TODO",
+    "evidence": []
+  },
+  "SAB": {
+    "esgScore": 0.5117,
+    "pillars": { "E": "TODO", "S": "TODO", "G": "TODO", "transparency": "TODO", "compliance": "TODO" },
+    "greenwashingRisk": "TODO",
+    "evidence": []
+  },
+  "MCM": {
+    "esgScore": 0.2519,
+    "pillars": { "E": "TODO", "S": "TODO", "G": "TODO", "transparency": "TODO", "compliance": "TODO" },
+    "greenwashingRisk": "high",
+    "evidence": [
+      {
+        "claim": "Trích dẫn cam kết môi trường từ Báo cáo bền vững 2024 (TODO)",
+        "claimSource": "Báo cáo bền vững MCM 2024, tr. TODO",
+        "counter": "Nguy cơ ô nhiễm môi trường từ hoạt động chăn nuôi bò sữa",
+        "counterSource": "Tạp chí Môi trường và Xây dựng (2022)",
+        "counterUrl": "https://moitruongxaydungvn.vn/nguy-co-o-nhiem-moi-truong-tu-cong-ty-co-phan-giong-bo-sua-moc-chau",
+        "contradiction": 0.78,
+        "taxonomyRef": "Vietnam Green Taxonomy – TODO mục"
+      }
+    ]
+  },
+  "SBT": {
+    "esgScore": 0.5842,
+    "pillars": { "E": "TODO", "S": "TODO", "G": "TODO", "transparency": "TODO", "compliance": "TODO" },
+    "greenwashingRisk": "TODO",
+    "evidence": []
+  }
+}

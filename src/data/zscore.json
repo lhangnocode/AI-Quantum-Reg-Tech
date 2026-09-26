@@ -1,0 +1,6 @@
+{
+  "VNM": { "model": "Z", "x1": "TODO", "x2": "TODO", "x3": "TODO", "x4": "TODO", "x5": "TODO", "z": 6.18, "zone": "safe", "rfinBase": 0.1, "fiscalYear": 2024 },
+  "SAB": { "model": "Z", "x1": "TODO", "x2": "TODO", "x3": "TODO", "x4": "TODO", "x5": "TODO", "z": 6.51, "zone": "safe", "rfinBase": 0.1, "fiscalYear": 2024 },
+  "MCM": { "model": "Z", "x1": "TODO", "x2": "TODO", "x3": "TODO", "x4": "TODO", "x5": "TODO", "z": 6.9, "zone": "safe", "rfinBase": 0.1, "fiscalYear": 2024 },
+  "SBT": { "model": "Z", "x1": "TODO", "x2": "TODO", "x3": "TODO", "x4": "TODO", "x5": "TODO", "z": 1.8, "zone": "distress", "rfinBase": 0.7, "fiscalYear": 2024 }
+}
