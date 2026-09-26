@@ -29,13 +29,42 @@ Hoàn thiện **giao diện sản phẩm** chạy trên **dữ liệu mock** (l�
 | [`docs/FIGMA_CLAUDE_CODE.md`](docs/FIGMA_CLAUDE_CODE.md) | Kết nối Figma MCP với Claude Code, câu lệnh mẫu, xử lý lỗi |
 | [`CLAUDE.md`](CLAUDE.md) | Ngữ cảnh & quy tắc cho Claude Code khi làm việc trong repo |
 
-## Chạy dự án (sau khi khởi tạo)
+## Trạng thái hiện tại
+
+| Màn hình | Route | Trạng thái |
+|---|---|---|
+| Dashboard | `/` | ✅ (chưa có lưới CompanyCard, heatmap rủi ro) |
+| Cổng 1 – Tra cứu công khai | `/company/[ticker]` | ✅ |
+| Cổng 2 – Nạp dữ liệu bảo mật | `/private` | ✅ (kết quả mẫu chờ số liệu) |
+| Tối ưu danh mục + Lõi Lượng tử | `/portfolio` | ✅ |
+| Báo cáo thẩm định (in PDF) | `/report/[ticker]` | ✅ |
+
+Số liệu còn thiếu (hiển thị "—") được liệt kê ở [`docs/MOCK_DATA.md` mục 5](docs/MOCK_DATA.md).
+
+**Bước tiếp theo:** thay mock JSON trong `src/data/` bằng dữ liệu đọc từ file Excel `AQ_Input.xlsx` của nhóm tài chính (vẫn đi qua `src/lib/api.ts`, UI không đổi).
+
+## Chạy dự án
+
+Yêu cầu: Node.js 22.
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000
-npm run build    # kiểm tra build trước khi deploy
+npm run dev        # http://localhost:3000
+npm run build      # kiểm tra build trước khi deploy
+npm run lint
+npm test           # unit test (Vitest)
+npx playwright install chromium   # một lần, trước khi chạy e2e
+npm run test:e2e   # e2e (Playwright) – tự build và chạy server
 ```
+
+Biến môi trường (tuỳ chọn – mặc định dùng mock data, không cần khai báo):
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `NEXT_PUBLIC_USE_MOCK` | `true` | `false` → gọi backend thật |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Địa chỉ FastAPI (Vòng 2) |
+
+Deploy: nối repo GitHub với Vercel (Framework preset: Next.js, giữ cấu hình mặc định). Push lên `main` → production; branch/PR → preview.
 
 ## Nhóm
 
