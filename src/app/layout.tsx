@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Be_Vietnam_Pro, JetBrains_Mono } from "next/font/google";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -26,12 +28,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="vi"
       className={`${beVietnamPro.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="flex h-screen overflow-hidden bg-background">
-        <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-y-auto px-6 py-5">{children}</main>
-        </div>
+      <body className="flex h-screen overflow-hidden bg-background print:block print:h-auto print:overflow-visible print:bg-white">
+        <TooltipProvider>
+          <Sidebar />
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden print:block print:overflow-visible">
+            <Header />
+            <main className="flex-1 overflow-y-auto px-6 py-5 print:overflow-visible print:p-0">{children}</main>
+          </div>
+          <Toaster position="bottom-right" />
+        </TooltipProvider>
       </body>
     </html>
   );

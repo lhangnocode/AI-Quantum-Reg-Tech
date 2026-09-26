@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { GatewayBadge } from "./GatewayBadge";
 import { NAV_ITEMS } from "./Sidebar";
 
 const today = new Intl.DateTimeFormat("vi-VN", { day: "numeric", month: "long", year: "numeric" });
@@ -12,6 +13,8 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  // Cổng 1 có badge trong header DN của trang; Cổng 2 hiển thị ở đây.
+  const gateway = pathname.startsWith("/private") ? 2 : null;
   const title = NAV_ITEMS.find((n) => n.match(pathname))?.label ?? "QuantumRegTech";
 
   function onSubmit(e: React.FormEvent) {
@@ -21,13 +24,15 @@ export function Header() {
   }
 
   return (
-    <header className="flex shrink-0 items-center gap-4 border-b bg-card px-6 py-3.5">
+    <header className="flex shrink-0 print:hidden items-center gap-4 border-b bg-card px-6 py-3.5">
       <div className="min-w-0">
         <h1 className="text-base font-semibold">{title}</h1>
         <p className="truncate text-xs text-muted-foreground" suppressHydrationWarning>
           Thẩm định ESG & tối ưu danh mục F&B — {today.format(new Date())}
         </p>
       </div>
+
+      {gateway && <GatewayBadge gateway={gateway} className="hidden md:inline-flex" />}
 
       <form onSubmit={onSubmit} className="relative ml-auto" role="search">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />

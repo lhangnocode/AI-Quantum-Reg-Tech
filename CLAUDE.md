@@ -18,6 +18,8 @@ Nền tảng RegTech (AI + Quantum) đánh giá tín nhiệm ESG và tối ưu d
 npm run dev     # localhost:3000
 npm run build
 npm run lint
+npm test          # unit test (Vitest) – đối chiếu số liệu với MOCK_DATA.md
+npm run test:e2e  # e2e (Playwright) – lần đầu chạy: npx playwright install chromium
 ```
 
 ## Quy tắc

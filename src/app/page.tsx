@@ -6,32 +6,16 @@ import { EsgCard } from "@/components/dashboard/EsgCard";
 import { FinancialHealthCard } from "@/components/dashboard/FinancialHealthCard";
 import { OsintCard } from "@/components/dashboard/OsintCard";
 import { StatCard } from "@/components/dashboard/StatCard";
-import type { CompanyOverview } from "@/components/dashboard/overview";
-import { getCompanies, getEsg, getOsintEvents, getPortfolio, getZScore } from "@/lib/api";
+import { getOverviews } from "@/lib/overview";
+import { getPortfolio } from "@/lib/api";
 import { formatPct } from "@/lib/format";
 
 const SOLVER_LABEL: Record<string, string> = {
   "classical-cobyla": "Cổ điển (COBYLA)",
 };
 
-async function getOverview(): Promise<CompanyOverview[]> {
-  const companies = await getCompanies();
-  return Promise.all(
-    companies.map(async (company) => {
-      const [zscore, esg, allEvents] = await Promise.all([
-        getZScore(company.ticker),
-        getEsg(company.ticker),
-        getOsintEvents(company.ticker),
-      ]);
-      const events = allEvents.filter((e) => e.active);
-      const posint = events.reduce((sum, e) => sum + e.penalty, 0);
-      return { company, zscore, esg, events, posint, rfinTotal: zscore.rfinBase + posint };
-    })
-  );
-}
-
 export default async function DashboardPage() {
-  const [items, portfolio] = await Promise.all([getOverview(), getPortfolio()]);
+  const [items, portfolio] = await Promise.all([getOverviews(), getPortfolio()]);
 
   if (items.length === 0) {
     return (

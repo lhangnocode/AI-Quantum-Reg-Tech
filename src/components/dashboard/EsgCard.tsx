@@ -3,7 +3,7 @@ import { AlertTriangle, Leaf } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/format";
 import { DashboardCard } from "./DashboardCard";
-import type { CompanyOverview } from "./overview";
+import type { CompanyOverview } from "@/lib/overview";
 
 export function EsgCard({ items }: { items: CompanyOverview[] }) {
   const highRisk = items.filter((i) => i.esg.greenwashingRisk === "high").map((i) => i.company.ticker);

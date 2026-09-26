@@ -30,3 +30,23 @@ export function formatBillion(vnd: Todo<number> | null | undefined, digits = 1):
 export function formatText(v: Todo<string> | null | undefined): string {
   return isMissing(v) ? EMPTY : v;
 }
+
+/** formatBytes(1_250_000) → "1,2 MB" */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 ** 2) return `${formatNumber(bytes / 1024, 1)} KB`;
+  return `${formatNumber(bytes / 1024 ** 2, 1)} MB`;
+}
+
+/** formatTime("2026-09-26T15:31:05Z") → "22:31:05" (giờ địa phương) */
+export function formatTime(iso: string): string {
+  return new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(
+    new Date(iso)
+  );
+}
+
+/** Ngày sự kiện "YYYY-MM" → "MM/YYYY"; "2022-TODO" → "2022 (chưa rõ tháng)". */
+export function formatEventDate(date: string): string {
+  const [y, m] = date.split("-");
+  return m && /^\d{1,2}$/.test(m) ? `${m.padStart(2, "0")}/${y}` : `${y} (chưa rõ tháng)`;
+}

@@ -149,3 +149,15 @@
     font-variant-numeric: tabular-nums;
   }
 }
+/* In báo cáo thẩm định: khổ A4 dọc, lề 20mm (UI_DESIGN §4.5) */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 20mm;
+  }
+  html,
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

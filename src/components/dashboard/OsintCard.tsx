@@ -6,7 +6,7 @@ import { severityZone, ZONE_CLASS } from "@/lib/risk";
 import type { OsintEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DashboardCard } from "./DashboardCard";
-import type { CompanyOverview } from "./overview";
+import type { CompanyOverview } from "@/lib/overview";
 
 function status(events: OsintEvent[]) {
   if (events.length === 0) return { label: "Tuân thủ", icon: CheckCircle2, cls: ZONE_CLASS.safe };

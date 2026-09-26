@@ -5,7 +5,7 @@ import { ALTMAN_DISTRESS, ALTMAN_SAFE, ZONE_CLASS } from "@/lib/risk";
 import { cn } from "@/lib/utils";
 import { DashboardCard } from "./DashboardCard";
 import { ZoneBadge } from "./ZoneBadge";
-import type { CompanyOverview } from "./overview";
+import type { CompanyOverview } from "@/lib/overview";
 
 const SCALE_MAX = 8;
 const pct = (z: number) => `${Math.min(Math.max(z / SCALE_MAX, 0), 1) * 100}%`;
