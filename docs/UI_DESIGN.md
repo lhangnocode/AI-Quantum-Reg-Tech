@@ -65,7 +65,7 @@ Vùng Altman Z' (DN chưa niêm yết – Cổng 2, theo Altman 1983): **Safe > 
 │  · Danh mục  │                                              │
 │  · Báo cáo   │                                              │
 │              │                                              │
-│  [Mock data] │                                              │
+│ [Dữ liệu mẫu]│                                              │
 └──────────────┴──────────────────────────────────────────────┘
 ```
 - Sidebar rộng 240px, thu gọn còn icon ở < 1024px, thành drawer ở mobile.
@@ -87,7 +87,7 @@ Khác biệt so với bản Figma (do quy tắc trong `CLAUDE.md`):
 - Nhãn "Q-Optimized" → "Cổ điển (COBYLA)"; ô "Quantum Engine" ở sidebar → badge "Dữ liệu mẫu – PoC".
 - Radar ESG 6 trục → thanh ESGi từng DN (điểm trụ cột đang TODO).
 - Bỏ chuông thông báo và avatar người dùng (chưa có dữ liệu).
-- KPI "Lợi nhuận thực tế" không hiện chênh lệch vì tính lại từ số làm tròn ra +4,10 điểm %, trong khi MOCK_DATA ghi +4,11.
+- KPI "Lợi nhuận thực tế" hiện chênh lệch "+4,11 điểm % so với Baseline", tính từ số liệu chưa làm tròn trong file Excel (khớp Phụ lục B).
 
 Các khu vực trong bảng dưới **chưa** có ở bản hiện tại: ⏳ Lưới `CompanyCard`, ⏳ Heatmap rủi ro, ⏳ Hoạt động gần đây (một phần đã có trong thẻ OSINT).
 
@@ -111,6 +111,7 @@ Các khu vực trong bảng dưới **chưa** có ở bản hiện tại: ⏳ L�
 
 Ghi chú triển khai:
 - Thanh chọn nhanh 4 mã ở đầu trang; ô tìm mã CP trên Header chuyển tới `/company/{MÃ}`; mã không tồn tại → trang 404 tiếng Việt.
+- Bảng X1–X5 có số thật (tính từ BCTC 2024 trong file Excel).
 - `EsgRadar` hiện trạng thái rỗng "Chưa có điểm trụ cột E / S / G" vì `pillars` đang TODO – không tự điền số.
 - `OsintTimeline`: lưới 3 năm × 12 tháng (kết thúc ở năm tài chính) + cột "Chưa rõ" cho sự kiện có ngày dạng `2022-TODO`; hover chấm → tooltip loại, mức, POSINT, nguồn.
 - "Thêm vào danh mục" lưu mã vào Zustand (`watchlist`), hiện toast; `/portfolio` hiển thị "Đang theo dõi từ Cổng 1".
@@ -124,7 +125,7 @@ Luồng 4 bước (stepper, component `UploadStepper`, trạng thái `idle → p
 
 Phía trên stepper có 3 thẻ nguyên tắc: *Xử lý trong phiên* (bản PoC: tệp không rời trình duyệt; Vòng 2: TLS tới API OCR), *Zero-Retention*, *Không chia sẻ* (kết quả không vào dữ liệu công khai Cổng 1). Badge "Cổng 2 · Bảo mật" nằm trên Header.
 
-> ⚠️ `private_sample.json` hiện toàn `TODO` (MOCK_DATA chưa có số liệu DN tư nhân mẫu) → bước 3 hiện Alert "Kết quả mẫu chưa có số liệu" và các ô "—". Nhóm tài chính cần điền để demo có số.
+> ⚠️ DN mẫu của Cổng 2 là **CTCP Chuỗi Sữa TH** (chưa niêm yết – theo AQ_Input), sheet `Private_Sample` trong `data/QuantumRegTech_Data.xlsx`. Chưa có BCTC của TH nên Z', ESG hiện "—" và bước 3 hiện Alert "Kết quả mẫu chưa có số liệu". Nhóm tài chính cần điền để demo có số (xem `docs/DATA.md` §6).
 
 > Màn này **chưa có trong mockup Vòng 1** – ưu tiên làm để trả lời câu hỏi về bảo mật.
 
@@ -141,7 +142,7 @@ Khi kéo slider: dùng kịch bản tính sẵn gần nhất trong `scenarios.js
 
 Ghi chú triển khai:
 - Slider mặc định α = β = γ = δ = 1 (kịch bản ESG-aware). `scenarios.json` hiện có 2 kịch bản (γ = δ = 0 → Baseline; γ = δ = 1 → ESG-aware) – cần thêm kịch bản từ code Python để slider "mượt" hơn.
-- 2 thẻ KPI "Lợi nhuận kỳ vọng" / "Lợi nhuận thực tế" tính Σ wᵢ × Rᵢ theo kịch bản đang chọn (khớp bảng kết quả MOCK_DATA – có unit test).
+- 2 thẻ KPI "Lợi nhuận kỳ vọng" / "Lợi nhuận thực tế" tính Σ wᵢ × Rᵢ theo kịch bản đang chọn (khớp bảng kết quả Phụ lục B – có unit test).
 - Tab "Lõi Lượng tử": số qubit 16, bit/tài sản 4, độ sâu mạch "—"; `QuboHeatmap` hiện trạng thái rỗng vì `qubo.matrix` = TODO.
 
 ### 4.5 Báo cáo thẩm định – `/report/[ticker]` ✅
@@ -152,7 +153,8 @@ Ghi chú triển khai:
   - **Rủi ro cao**: vùng Distress hoặc RFin,Total ≥ 0,5 (vd. SBT)
   - **Cần theo dõi**: có sự kiện OSINT đang hiệu lực hoặc rủi ro tẩy xanh cao (vd. MCM)
   - **Đạt**: các trường hợp còn lại (vd. VNM, SAB)
-- Mục "Phương pháp & nguồn dữ liệu" đọc từ `methodology.json` qua `getMethodology()`.
+- Mục "Phương pháp & nguồn dữ liệu" đọc từ sheet `Params` (→ `methodology.json`) qua `getMethodology()`.
+- Mục 3 hiển thị X1–X5 tính từ BCTC 2024 (sheet `ZScore`).
 
 ## 5. User journey demo (≈ 3 phút)
 
@@ -160,7 +162,7 @@ Ghi chú triển khai:
 Dashboard ──► thấy MCM có cảnh báo OSINT, SBT ở vùng Distress
    │
    ▼
-Cổng 1: /company/MCM ──► Bằng chứng tẩy xanh + phạt xả thải 2022 (POSINT +0,10)
+Cổng 1: /company/MCM ──► Bằng chứng tẩy xanh + báo chí phản ánh ô nhiễm 2022 (POSINT +0,10)
    │
    ▼
 Cổng 1: /company/SBT ──► Z = 1,80 (Distress) → RFin,Total = 0,70
@@ -204,12 +206,31 @@ Cổng 2: /private ──► upload hồ sơ DN tư nhân → kết quả → Ze
 1. **Figma:** mỗi màn hình là 1 frame đặt tên theo route (`/company/[ticker]`), dùng Auto Layout, đặt tên layer có nghĩa (`ZScoreGauge`, không phải `Frame 123`).
 2. **Variables:** khai báo màu/spacing trong Figma Variables trùng tên token ở mục 2 → Claude đọc được và map sang Tailwind.
 3. **Annotation:** ghi chú trên frame: nguồn dữ liệu (`esg.json → evidence[]`), hành vi tương tác, trạng thái rỗng/lỗi – đây cũng là phần "user journey & data flow annotations" hồ sơ đang thiếu.
-4. **Code:** trong Claude Code, dán link frame và yêu cầu dựng component (xem `FIGMA_CLAUDE_CODE.md`).
-5. **So khớp:** chụp màn hình bản code, đặt cạnh frame Figma, sửa sai lệch.
+4. **Code:** trong Claude Code, dán link và yêu cầu dựng component (xem 7.1).
+5. **So khớp:** chụp màn hình bản code, đặt cạnh thiết kế, sửa sai lệch.
+
+### 7.1 Dùng Figma với Claude Code
+
+**Kết nối (một lần):** cài plugin `figma@claude-plugins-official` (đã kèm Figma MCP server remote `https://mcp.figma.com/mcp`) → trong Claude Code gõ `/mcp` → chọn **figma** → **Authenticate** → cho phép trên trình duyệt. `/mcp` hiện ✔ connected là xong. Không cài song song server desktop (`figma-desktop`) để tránh xung đột. Tài khoản Figma cần quyền xem file.
+
+**Loại link:**
+- **Figma Design** (`figma.com/design/<fileKey>/…?node-id=12-345`): chọn frame → *Copy link to selection* (Ctrl/⌘ + L). Phải có `node-id`, gửi từng frame một.
+- **Figma Make** (`figma.com/make/<fileKey>/…`): là prototype dạng **code React**, không cần `node-id`; Claude đọc toàn bộ source (`App.tsx`, theme CSS) rồi chuyển sang stack dự án. Make không hỗ trợ chụp ảnh qua MCP → so khớp bằng cách chạy app, chụp màn hình (Playwright) và đặt cạnh bản xem trước trong Make.
+
+**Câu lệnh mẫu:**
+```
+Dựng frame này thành trang src/app/company/[ticker]/page.tsx.
+Dùng shadcn/ui + Tailwind theo docs/UI_DESIGN.md mục 4.2, dữ liệu qua src/lib/api.ts, token màu trong globals.css.
+<link>
+```
+
+**Kinh nghiệm từ Dashboard (Figma Make "Design-QuantumRegTech-Dashboard"):** code Make dùng số liệu tự tạo, màu hex cứng và không biết quy tắc dự án (ngưỡng Altman sai, nhãn "Quantum" khi chưa chạy lượng tử) → luôn thay bằng dữ liệu từ `api.ts` + token, và nên dán các quy tắc chính trong `CLAUDE.md` vào prompt của Make.
+
+**Lỗi thường gặp:** `/mcp` báo *needs auth* → Authenticate lại · không truy cập được file → kiểm tra quyền xem · sai frame → link thiếu `node-id` · *rate limit* (seat View/Collab gói Free/Starter bị giới hạn thấp) → đợi, gửi frame nhỏ hơn hoặc dùng seat Dev/Full.
 
 ## 8. Checklist chất lượng UI
 
-- [ ] Mọi số liệu khớp `MOCK_DATA.md` (người tài chính duyệt) – *unit test đã đối chiếu RFin,Total, Σw, lợi nhuận danh mục; vẫn cần người duyệt*
+- [ ] Mọi số liệu khớp Phụ lục B / `docs/DATA.md` (người tài chính duyệt) – *unit test đã đối chiếu Z, Ri, lợi nhuận, RFin,Total, Σw, kết quả danh mục; vẫn cần người duyệt*
 - [x] Màu rủi ro luôn đi kèm nhãn chữ
 - [x] Có loading / empty / error cho từng trang
 - [ ] Responsive ≥ 1280px hoàn hảo; 768px dùng được – *đã kiểm tra 1440px và 820px; sidebar thu gọn icon < 1024px, chưa có drawer mobile*

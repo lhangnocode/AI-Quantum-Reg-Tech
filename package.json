@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "data": "node scripts/build-data.mjs",
+    "postinstall": "npm run data",
+    "predev": "npm run data",
     "dev": "next dev",
+    "prebuild": "npm run data",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "pretest": "npm run data",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },
@@ -35,8 +40,12 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "exceljs": "^4.4.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.2"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

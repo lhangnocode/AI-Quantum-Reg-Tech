@@ -74,7 +74,7 @@ export function Sidebar() {
           <FlaskConical className="size-3.5 shrink-0 text-risk-grey" />
           <div className="hidden lg:block">
             <p className="text-[11px] font-semibold text-risk-grey">Dữ liệu mẫu – PoC</p>
-            <p className="leading-snug text-muted-foreground">Số liệu từ Phụ lục B – Hồ sơ Vòng 1.</p>
+            <p className="leading-snug text-muted-foreground">Phụ lục B (Vòng 1) + AQ_Input – xem data/*.xlsx</p>
           </div>
         </div>
       </div>

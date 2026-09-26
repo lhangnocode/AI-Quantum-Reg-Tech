@@ -8,7 +8,7 @@ import { OsintCard } from "@/components/dashboard/OsintCard";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { getOverviews } from "@/lib/overview";
 import { getPortfolio } from "@/lib/api";
-import { formatPct } from "@/lib/format";
+import { formatNumber, formatPct } from "@/lib/format";
 
 const SOLVER_LABEL: Record<string, string> = {
   "classical-cobyla": "Cổ điển (COBYLA)",
@@ -30,6 +30,7 @@ export default async function DashboardPage() {
   const osintAlerts = items.reduce((n, i) => n + i.events.length, 0);
   const osintTickers = items.filter((i) => i.events.length > 0).map((i) => i.company.ticker);
   const distress = items.filter((i) => i.zscore.zone === "distress").map((i) => i.company.ticker);
+  const realizedGap = portfolio.esgAware.realizedReturn - portfolio.baseline.realizedReturn;
   const allocation = items.map(({ company: { ticker } }) => ({
     ticker,
     weight: portfolio.esgAware.weights[ticker] ?? 0,
@@ -58,7 +59,7 @@ export default async function DashboardPage() {
         <StatCard
           label="Lợi nhuận thực tế ESG-aware"
           value={formatPct(portfolio.esgAware.realizedReturn)}
-          hint={`Baseline: ${formatPct(portfolio.baseline.realizedReturn)}`}
+          hint={`${realizedGap > 0 ? "+" : ""}${formatNumber(realizedGap * 100)} điểm % so với Baseline`}
           icon={TrendingUp}
           tone="safe"
         />

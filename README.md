@@ -5,13 +5,13 @@
 
 ## Mục tiêu của MVP
 
-Hoàn thiện **giao diện sản phẩm** chạy trên **dữ liệu mock** (lấy từ Phụ lục B của hồ sơ Vòng 1), để demo trọn luồng người dùng:
+Hoàn thiện **giao diện sản phẩm** chạy trên **dữ liệu mẫu** trong file Excel `data/QuantumRegTech_Data.xlsx` (Phụ lục B hồ sơ Vòng 1 + BCTC/giá từ file nhập liệu của nhóm tài chính), để demo trọn luồng người dùng:
 
 `Tra cứu doanh nghiệp → Xem rủi ro Tẩy xanh / Z-Score / OSINT → Tối ưu danh mục → Xuất báo cáo thẩm định`
 
 ### Trong phạm vi (In scope)
 - UI đầy đủ 5 màn hình (Dashboard, Cổng 1, Cổng 2, Portfolio, Report)
-- Mock data theo đúng schema API tương lai
+- Dữ liệu mẫu trong file Excel, chuyển sang JSON theo đúng schema API tương lai
 - Deploy link demo công khai (Vercel)
 
 ### Ngoài phạm vi (tạm thời bỏ qua)
@@ -24,9 +24,8 @@ Hoàn thiện **giao diện sản phẩm** chạy trên **dữ liệu mock** (l�
 | File | Nội dung |
 |---|---|
 | [`docs/TECH_STACK.md`](docs/TECH_STACK.md) | Công nghệ sử dụng, cấu trúc thư mục, lệnh khởi tạo, lộ trình nâng cấp Vòng 2 |
-| [`docs/UI_DESIGN.md`](docs/UI_DESIGN.md) | Design system, đặc tả từng màn hình, user journey, quy trình Figma → code |
-| [`docs/MOCK_DATA.md`](docs/MOCK_DATA.md) | Schema dữ liệu (= hợp đồng API), số liệu 4 doanh nghiệp, endpoint tương lai |
-| [`docs/FIGMA_CLAUDE_CODE.md`](docs/FIGMA_CLAUDE_CODE.md) | Kết nối Figma MCP với Claude Code, câu lệnh mẫu, xử lý lỗi |
+| [`docs/UI_DESIGN.md`](docs/UI_DESIGN.md) | Design system, đặc tả từng màn hình, user journey, quy trình Figma → code (kết nối Figma MCP) |
+| [`docs/DATA.md`](docs/DATA.md) | File Excel dữ liệu, luồng Excel → JSON, schema (= hợp đồng API), số liệu chuẩn, việc cần xác nhận |
 | [`CLAUDE.md`](CLAUDE.md) | Ngữ cảnh & quy tắc cho Claude Code khi làm việc trong repo |
 
 ## Trạng thái hiện tại
@@ -39,9 +38,11 @@ Hoàn thiện **giao diện sản phẩm** chạy trên **dữ liệu mock** (l�
 | Tối ưu danh mục + Lõi Lượng tử | `/portfolio` | ✅ |
 | Báo cáo thẩm định (in PDF) | `/report/[ticker]` | ✅ |
 
-Số liệu còn thiếu (hiển thị "—") được liệt kê ở [`docs/MOCK_DATA.md` mục 5](docs/MOCK_DATA.md).
+Số liệu còn thiếu (hiển thị "—") và các điểm cần nhóm tài chính quyết định: [`docs/DATA.md` mục 6](docs/DATA.md).
 
-**Bước tiếp theo:** thay mock JSON trong `src/data/` bằng dữ liệu đọc từ file Excel `AQ_Input.xlsx` của nhóm tài chính (vẫn đi qua `src/lib/api.ts`, UI không đổi).
+## Dữ liệu
+
+Nguồn dữ liệu duy nhất: **`data/QuantumRegTech_Data.xlsx`**. Sửa số liệu trong file này → lưu → `npm run data && npm test`. Các file `src/data/*.json` được sinh tự động (trước `dev` / `build` / `test`) và không commit. Chi tiết: [`docs/DATA.md`](docs/DATA.md).
 
 ## Chạy dự án
 
@@ -52,12 +53,13 @@ npm install
 npm run dev        # http://localhost:3000
 npm run build      # kiểm tra build trước khi deploy
 npm run lint
+npm run data       # Excel → src/data/*.json (tự chạy trước dev/build/test)
 npm test           # unit test (Vitest)
 npx playwright install chromium   # một lần, trước khi chạy e2e
 npm run test:e2e   # e2e (Playwright) – tự build và chạy server
 ```
 
-Biến môi trường (tuỳ chọn – mặc định dùng mock data, không cần khai báo):
+Biến môi trường (tuỳ chọn – mặc định dùng dữ liệu từ file Excel, không cần khai báo):
 
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|

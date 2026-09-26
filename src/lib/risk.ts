@@ -1,6 +1,6 @@
 import type { AltmanZone, OsintSeverity } from "./types";
 
-// Ngưỡng Altman Z gốc – docs/MOCK_DATA.md mục 1.
+// Ngưỡng Altman Z gốc – sheet Params (z_safe, z_distress), docs/DATA.md.
 export const ALTMAN_SAFE = 2.99;
 export const ALTMAN_DISTRESS = 1.81;
 

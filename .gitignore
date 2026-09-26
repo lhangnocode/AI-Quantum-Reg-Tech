@@ -45,3 +45,6 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# dữ liệu sinh từ data/QuantumRegTech_Data.xlsx (npm run data)
+/src/data/*.json

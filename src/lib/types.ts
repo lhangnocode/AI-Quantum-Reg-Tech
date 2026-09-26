@@ -1,4 +1,4 @@
-// Types khớp schema trong docs/MOCK_DATA.md (= hợp đồng API Vòng 2).
+// Types khớp schema trong docs/DATA.md (= hợp đồng API Vòng 2).
 // Ô chưa có số liệu được giữ nguyên là "TODO" và hiển thị "—" trên UI.
 
 export type Todo<T> = T | "TODO";
@@ -120,7 +120,7 @@ export interface PrivateAnalysis {
 
 export type PrivateStage = "ocr" | "normalize" | "zscore" | "osint";
 
-/** Tham số chung – docs/MOCK_DATA.md §1. */
+/** Tham số chung – sheet Params (docs/DATA.md). */
 export interface Methodology {
   riskFree: { value: number; source: string };
   equityRiskPremium: { value: number; source: string };

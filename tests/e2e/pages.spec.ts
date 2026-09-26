@@ -15,13 +15,14 @@ test.describe("smoke – mọi trang render không lỗi", () => {
 test("Dashboard hiển thị số liệu từ api", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("15,96%")).toBeVisible();
+  await expect(page.getByText("+4,11 điểm % so với Baseline")).toBeVisible();
   await expect(page.locator(".recharts-pie-sector")).toHaveCount(4);
 });
 
 test("Cổng 1 – MCM có bằng chứng tẩy xanh và sự kiện OSINT", async ({ page }) => {
   await page.goto("/company/MCM");
   await expect(page.getByText("Rủi ro tẩy xanh: Cao")).toBeVisible();
-  await expect(page.getByText("Phạt xả thải môi trường").first()).toBeVisible();
+  await expect(page.getByText("Báo chí phản ánh nguy cơ ô nhiễm môi trường").first()).toBeVisible();
   await page.getByRole("button", { name: "Thêm vào danh mục" }).click();
   await expect(page.getByText("Đã thêm MCM vào danh mục theo dõi")).toBeVisible();
 });

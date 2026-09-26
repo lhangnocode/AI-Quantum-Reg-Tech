@@ -2,7 +2,7 @@
 
 ## 1. Nguyên tắc chọn công nghệ
 
-1. **UI trước, backend sau** – toàn bộ MVP chạy được chỉ với frontend + file JSON.
+1. **UI trước, backend sau** – toàn bộ MVP chạy được chỉ với frontend + file Excel dữ liệu (chuyển sang JSON lúc build).
 2. **Một điểm đổi duy nhất** – UI chỉ gọi hàm trong `src/lib/api.ts`. Khi có backend thật, chỉ sửa file này.
 3. **Dùng component có sẵn** – không tự thiết kế button/table/dialog từ đầu.
 4. **Deploy được ngay ngày 1** – luôn có link demo chạy được.
@@ -19,7 +19,7 @@
 | Biểu đồ nâng cao | **Apache ECharts 6** (`echarts-for-react/lib/core`, import theo module) | Gauge Z-Score, Heatmap ma trận QUBO (Heatmap rủi ro: chưa làm) |
 | State | **Zustand 5** (`src/store/portfolio.ts`) | Tham số α β γ δ, solver, danh sách DN theo dõi |
 | Font | **Be Vietnam Pro** (UI), **JetBrains Mono** (số liệu) qua `next/font` | Hỗ trợ tiếng Việt đầy đủ |
-| Mock data | JSON tĩnh trong `src/data/` | Schema = hợp đồng API tương lai (xem `MOCK_DATA.md`) |
+| Dữ liệu | **File Excel** `data/QuantumRegTech_Data.xlsx` → `scripts/build-data.mjs` (**exceljs**) → JSON trong `src/data/` | Nguồn duy nhất; schema JSON = hợp đồng API tương lai (xem `DATA.md`) |
 | Xuất PDF | Trang `/report/[ticker]` + CSS `@media print` → *Save as PDF* | Không cần thư viện PDF |
 | Deploy | **Vercel** | Preview link cho mỗi branch/PR |
 | Code quality | ESLint (`eslint-config-next`) | Có sẵn khi khởi tạo Next.js (Prettier chưa cài) |
@@ -44,7 +44,7 @@ npx shadcn@latest add button card badge table tabs slider dialog input progress 
   sheet tooltip separator skeleton sonner dropdown-menu select alert checkbox label
 
 npm i recharts echarts echarts-for-react zustand lucide-react
-npm i -D @types/node@^22 vitest @playwright/test   # @types/node ^22 để tương thích Vitest
+npm i -D @types/node@^22 vitest @playwright/test exceljs   # @types/node ^22 để tương thích Vitest; exceljs đọc file Excel dữ liệu
 npx playwright install chromium
 ```
 
@@ -76,10 +76,10 @@ src/
 │   ├── report/                   # ReportSection, PrintButton
 │   ├── common/                   # InfoTip, PageSkeleton
 │   └── layout/                   # Sidebar, Header, GatewayBadge
-├── data/                         # *.json mock (xem MOCK_DATA.md §3)
+├── data/                         # *.json SINH TỪ data/QuantumRegTech_Data.xlsx (npm run data, không commit)
 ├── lib/
 │   ├── api.ts                    # ⭐ Lớp truy cập dữ liệu duy nhất
-│   ├── types.ts                  # TypeScript types (khớp MOCK_DATA.md)
+│   ├── types.ts                  # TypeScript types (khớp docs/DATA.md §5)
 │   ├── overview.ts               # Ghép companies + zscore + esg + osint → CompanyOverview (tính POSINT, RFin,Total)
 │   ├── portfolio.ts              # nearestScenario(), portfolioReturn()
 │   ├── assessment.ts             # Kết luận tổng của báo cáo (quy tắc ở UI_DESIGN §4.5)
@@ -89,14 +89,18 @@ src/
 │   └── utils.ts                  # cn()
 └── store/
     └── portfolio.ts              # Zustand store
+data/
+└── QuantumRegTech_Data.xlsx      # ⭐ Nguồn dữ liệu duy nhất (xem docs/DATA.md)
+scripts/
+└── build-data.mjs                # Excel → src/data/*.json (chạy trước dev / build / test)
 tests/
-├── unit/                         # Vitest – format, risk, đối chiếu số liệu MOCK_DATA.md
+├── unit/                         # Vitest – format, risk, đối chiếu số liệu với Phụ lục B
 └── e2e/                          # Playwright – smoke mọi trang + luồng Cổng 1/2, Danh mục
 ```
 
 ## 5. Lớp `api.ts`
 
-Mỗi hàm có 2 nhánh: `USE_MOCK` (mặc định) đọc JSON trong `src/data/` với độ trễ giả lập; ngược lại gọi `NEXT_PUBLIC_API_URL`.
+Mỗi hàm có 2 nhánh: `USE_MOCK` (mặc định) đọc JSON trong `src/data/` (sinh từ file Excel – xem `docs/DATA.md` §1) với độ trễ giả lập; ngược lại gọi `NEXT_PUBLIC_API_URL`. `api.ts` import JSON tĩnh (không đọc Excel lúc chạy) nên dùng được cả ở Server lẫn Client Component và trang vẫn prerender tĩnh.
 
 ```ts
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
@@ -108,16 +112,16 @@ export async function getCompanies(): Promise<Company[]> {
 }
 ```
 
-| Hàm | Mock đọc từ | Endpoint thật (MOCK_DATA §4) |
+| Hàm | Mock đọc từ (sheet Excel gốc) | Endpoint thật (DATA.md §5) |
 |---|---|---|
-| `getCompanies()` / `getCompany(ticker)` | `companies.json` | `GET /api/v1/companies` |
-| `getZScore(ticker)` | `zscore.json` | `GET /api/v1/companies/{ticker}/zscore` |
-| `getEsg(ticker)` | `esg.json` | `GET /api/v1/companies/{ticker}/esg` |
-| `getOsintEvents(ticker, months)` | `osint_events.json` | `GET /api/v1/companies/{ticker}/osint?months=36` |
-| `getPortfolio()` | `portfolio.json` | `POST /api/v1/portfolio/optimize` |
-| `getScenarios()` | `scenarios.json` | – (chỉ mock; có backend thì gọi optimize trực tiếp) |
-| `getMethodology()` | `methodology.json` | `GET /api/v1/methodology` |
-| `analyzePrivate(file, { onStage, signal })` | `private_sample.json` + `deletedAt` | `POST /api/v1/private/analyze` (multipart) |
+| `getCompanies()` / `getCompany(ticker)` | `companies.json` (Companies + Market) | `GET /api/v1/companies` |
+| `getZScore(ticker)` | `zscore.json` (ZScore) | `GET /api/v1/companies/{ticker}/zscore` |
+| `getEsg(ticker)` | `esg.json` (ESG + ESG_Evidence) | `GET /api/v1/companies/{ticker}/esg` |
+| `getOsintEvents(ticker, months)` | `osint_events.json` (OSINT) | `GET /api/v1/companies/{ticker}/osint?months=36` |
+| `getPortfolio()` | `portfolio.json` (Params + Portfolio + Portfolio_Summary + QUBO_Matrix) | `POST /api/v1/portfolio/optimize` |
+| `getScenarios()` | `scenarios.json` (Scenarios) | – (chỉ mock; có backend thì gọi optimize trực tiếp) |
+| `getMethodology()` | `methodology.json` (Params) | `GET /api/v1/methodology` |
+| `analyzePrivate(file, { onStage, signal })` | `private_sample.json` (Private_Sample) + `deletedAt` | `POST /api/v1/private/analyze` (multipart) |
 
 Trang không gọi thẳng nhiều hàm lẻ mà dùng `getOverviews()` / `getOverview(ticker)` trong `lib/overview.ts`.
 
@@ -135,22 +139,24 @@ Quy tắc: **component không bao giờ `import` trực tiếp từ `src/data/`*
 
 ```bash
 npm run lint && npx tsc --noEmit
-npm test            # Vitest – tests/unit (đối chiếu RFin,Total, Σw, lợi nhuận danh mục với MOCK_DATA.md)
+npm run data        # Excel → src/data/*.json (tự chạy trước dev / build / test)
+npm test            # Vitest – tests/unit (đối chiếu Z, Ri, lợi nhuận, RFin,Total, Σw, kết quả danh mục với Phụ lục B)
 npm run test:e2e    # Playwright – tự build + chạy server cổng 3100, test tests/e2e
 ```
-Khi đổi số liệu trong `src/data/`, chạy `npm test` để chắc bảng kết quả trong `portfolio.json` vẫn khớp Σ wᵢ × Rᵢ.
+Khi sửa file Excel, chạy `npm test` để chắc số liệu vẫn nhất quán (Σwᵢ = 1, Z = công thức X1–X5, kết quả danh mục khớp Σ wᵢ × Rᵢ).
 
 ## 7. Lộ trình nâng cấp (Vòng 2)
 
 | Hạng mục MVP (mock) | Thay bằng | Ghi chú |
 |---|---|---|
+| File Excel → JSON tĩnh | FastAPI đọc cùng file Excel / Postgres | Giữ nguyên schema JSON (DATA.md §5); đặt `NEXT_PUBLIC_USE_MOCK=false` |
 | `portfolio.json` | FastAPI `POST /api/v1/portfolio/optimize` → SciPy/COBYLA | Code Python nhóm đã có, chỉ cần bọc API |
 | Solver cổ điển | Qiskit (QAOA/VQE) qua cùng endpoint, thêm tham số `solver: "classical" \| "qaoa"` | UI đã có Select solver – chỉ cần bỏ `disabled` ở mục QAOA (`WeightSliders.tsx`) |
 | `scenarios.json` (slider chọn kịch bản gần nhất) | Gọi optimize trực tiếp với α β γ δ | Sửa `PortfolioOptimizer` gọi API thay vì `nearestScenario()` |
-| `osint_events.json` | Crawler (CafeF, Vietstock, SSC, Tổng cục Thuế) + NLP phân loại | Lưu vào Postgres/Supabase |
-| `esg.json` (bằng chứng) | LLM + RAG đối chiếu Vietnam Green Taxonomy | Trả về đoạn trích + nguồn |
+| Sheet `OSINT` | Crawler (CafeF, Vietstock, SSC, Tổng cục Thuế) + NLP phân loại | Lưu vào Postgres/Supabase |
+| Sheet `ESG_Evidence` (bằng chứng) | LLM + RAG đối chiếu Vietnam Green Taxonomy | Trả về đoạn trích + nguồn |
 | Upload giả ở Cổng 2 (`analyzePrivate` mock) | OCR (PyMuPDF/pdfplumber) + xoá file sau xử lý (Zero-Retention) | Nhánh gọi `POST /api/v1/private/analyze` đã viết sẵn; backend nên trả tiến độ từng bước (SSE) để giữ `onStage` |
-| `qubo.matrix` = `"TODO"` | Ma trận Q 16×16 xuất từ code Python | `QuboHeatmap` tự hiển thị khi là `number[][]` |
+| `qubo.matrix` = `"TODO"` | Ma trận Q 16×16 xuất từ code Python → dán vào sheet `QUBO_Matrix` | `QuboHeatmap` tự hiển thị khi là `number[][]` |
 
 ## 8. Lịch triển khai gợi ý (7–10 ngày)
 

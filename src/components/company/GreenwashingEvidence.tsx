@@ -1,6 +1,6 @@
 import { ArrowLeftRight, ExternalLink, FileText, Newspaper, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatText } from "@/lib/format";
 import { ZONE_CLASS } from "@/lib/risk";
 import type { EsgEvidence } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -41,9 +41,9 @@ export function GreenwashingEvidence({ evidence }: { evidence: EsgEvidence[] }) 
             <div className="rounded-lg bg-muted/50 p-3">
               <p className="flex items-start gap-2 text-xs">
                 <FileText className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                <span>“{e.claim}”</span>
+                <span>{e.claim === "TODO" ? "Chưa có trích dẫn tuyên bố" : `“${e.claim}”`}</span>
               </p>
-              <p className="mt-1.5 pl-5.5 text-[11px] text-muted-foreground">{e.claimSource}</p>
+              <p className="mt-1.5 pl-5.5 text-[11px] text-muted-foreground">{formatText(e.claimSource)}</p>
             </div>
 
             <div className="flex w-full flex-row items-center justify-center gap-2 md:w-24 md:flex-col">
@@ -57,7 +57,7 @@ export function GreenwashingEvidence({ evidence }: { evidence: EsgEvidence[] }) 
             <div className="rounded-lg border border-risk-distress/20 bg-risk-distress/5 p-3">
               <p className="flex items-start gap-2 text-xs">
                 <Newspaper className="mt-0.5 size-3.5 shrink-0 text-risk-distress" />
-                <span>{e.counter}</span>
+                <span>{formatText(e.counter)}</span>
               </p>
               <a
                 href={e.counterUrl}
@@ -65,11 +65,11 @@ export function GreenwashingEvidence({ evidence }: { evidence: EsgEvidence[] }) 
                 rel="noopener noreferrer"
                 className="mt-1.5 inline-flex items-center gap-1 pl-5.5 text-[11px] text-primary hover:underline"
               >
-                {e.counterSource} <ExternalLink className="size-3" />
+                {formatText(e.counterSource)} <ExternalLink className="size-3" />
               </a>
             </div>
 
-            <p className="text-[10px] text-muted-foreground md:col-span-3">Đối chiếu: {e.taxonomyRef}</p>
+            <p className="text-[10px] text-muted-foreground md:col-span-3">Đối chiếu: {formatText(e.taxonomyRef)}</p>
           </div>
         );
       })}

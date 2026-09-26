@@ -125,7 +125,7 @@ export default async function ReportPage(props: PageProps<"/report/[ticker]">) {
             <ul className="mt-2 list-disc space-y-1 pl-5">
               {esg.evidence.map((e, i) => (
                 <li key={i}>
-                  Tuyên bố: “{e.claim}” ({e.claimSource}) ↔ Ngoại cảnh: {e.counter} ({e.counterSource}). Mức mâu thuẫn{" "}
+                  Tuyên bố: {e.claim === "TODO" ? "—" : `“${e.claim}”`} ({formatText(e.claimSource)}) ↔ Ngoại cảnh: {formatText(e.counter)} ({formatText(e.counterSource)}). Mức mâu thuẫn{" "}
                   <span className="font-mono">{formatNumber(e.contradiction)}</span>.
                 </li>
               ))}
