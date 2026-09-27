@@ -85,7 +85,7 @@ Dòng 1 mỗi sheet = **tên cột máy đọc** (không đổi tên; rê chuộ
 | `Portfolio_Summary` | Lợi nhuận kỳ vọng/thực tế (**SUMPRODUCT**), tổng tỷ trọng, số công bố để đối chiếu | `portfolio.json` |
 | `Scenarios` | α β γ δ + tỷ trọng từng mã (cho slider) | `scenarios.json` |
 | `QUBO_Matrix` | Vùng B3:Q18 cho ma trận Q 16×16 (để trống = chưa có) | `portfolio.json → qubo.matrix` |
-| `Private_Sample` | Kết quả mẫu Cổng 2 dạng `key` / `value` (TH – chưa niêm yết) | `private_sample.json` |
+| `Private_Sample` | Kết quả mẫu Cổng 2 dạng `key` / `value` (TH – chưa niêm yết), dùng khi tải tệp Excel | `private_sample.json` |
 | `ESG_ChiTieu` | 32 chỉ tiêu ESG thô 2024 của VNM, SAB, MCM, SBT, TH (từ AQ_Input) – **app chưa đọc**, dùng để tính điểm trụ cột | – |
 | `Cho_xac_nhan` | Danh sách việc cần nhóm quyết định (mục 6) | – |
 
@@ -157,7 +157,31 @@ UI chọn kịch bản gần nhất (khoảng cách Euclid trên α β γ δ) v�
   "esg": { "esgScore": "TODO", "pillars": { "E": "TODO", "S": "TODO", "G": "TODO", "transparency": "TODO", "compliance": "TODO" }, "greenwashingRisk": "TODO", "evidence": [] },
   "events": [], "posint": "TODO" }
 ```
-API thật trả thêm `"deletedAt": "<ISO timestamp>"` (thời điểm xoá tệp gốc); bản mock tự gán khi xử lý xong.
+Kết quả Cổng 2 (`PrivateAnalysis` – `src/lib/types.ts`) = dạng trên + các trường:
+
+```json
+{ "source": "document",
+  "extraction": { "fileType": "pdf", "pages": 2, "processedPages": 2, "ocrPages": [1, 2], "unit": "VND",
+                  "fields": [{ "key": "TA", "label": "Tổng cộng tài sản", "code": "270", "value": 1457563223991,
+                               "page": 1, "source": "ocr", "line": "TỔNG CỘNG TÀI SẢN 270 1.457.563.223.991 1.360.910.452.122" }],
+                  "warnings": [] },
+  "deletedAt": "2026-09-27T03:20:00.000Z" }
+```
+- `source`: `"document"` = số liệu trích từ tệp tải lên (PDF); `"sample"` = kết quả mẫu từ sheet `Private_Sample` (khi tải Excel).
+- `extraction.fields`: 9 chỉ tiêu `CA` (100) · `TA` (270) · `CL` (310) · `TL` (300) · `EQ` (400) · `RE` (421) · `Revenue` (10) · `PBT` (50) · `Interest` (23); `value = null` nếu không tìm thấy.
+- `deletedAt`: thời điểm xoá tệp gốc (Zero-Retention). Backend Vòng 2 phải trả cùng cấu trúc này.
+
+### Cổng 2 – từ PDF đến Z'
+
+| Chỉ tiêu Z' | Công thức (mã số B01-DN / B02-DN) |
+|---|---|
+| X1 | (Tài sản ngắn hạn 100 − Nợ ngắn hạn 310) / Tổng tài sản 270 |
+| X2 | LNST chưa phân phối 421 / Tổng tài sản 270 |
+| X3 | (Tổng LN kế toán trước thuế 50 + Chi phí lãi vay 23) / Tổng tài sản 270 |
+| X4 | Vốn chủ sở hữu **sổ sách** 400 / Nợ phải trả 300 (DN chưa niêm yết không có vốn hoá) |
+| X5 | Doanh thu thuần 10 / Tổng tài sản 270 |
+
+`Z' = 0,717X1 + 0,847X2 + 3,107X3 + 0,420X4 + 0,998X5`; vùng theo ngưỡng Z'; RFin,Base theo vùng (Safe 0,10 · Distress 0,70 · Grey chưa quy định → "—"). POSINT, ESG của DN tải lên: "TODO" (chưa tự động). Code: `src/lib/ocr/` (`extract-pdf.ts`, `parse-financials.ts`, `zprime.ts`).
 
 ### `methodology.json`
 ```json
@@ -178,7 +202,7 @@ API thật trả thêm `"deletedAt": "<ISO timestamp>"` (thời điểm xoá t�
 | GET | `/api/v1/companies/{ticker}/esg` | 1 phần tử của `esg.json` |
 | GET | `/api/v1/companies/{ticker}/osint?months=36` | lọc `osint_events.json` |
 | POST | `/api/v1/portfolio/optimize` body `{ tickers, params, constraints, solver }` | `portfolio.json` |
-| POST | `/api/v1/private/analyze` (multipart, field `file`) | dạng `private_sample.json` + `{ deletedAt }` |
+| POST | `/api/v1/private/analyze` (multipart, field `file`) | `PrivateAnalysis`: dạng `private_sample.json` + `source`, `extraction`, `deletedAt` |
 | GET | `/api/v1/methodology` | `methodology.json` |
 | GET | `/api/v1/reports/{ticker}` | dữ liệu báo cáo |
 
@@ -197,7 +221,7 @@ Danh sách đầy đủ (kèm quyết định) ở sheet `Cho_xac_nhan` trong fi
 | `Params` | α β γ δ | – |
 | `QUBO_Matrix` | Ma trận Q 16×16 | Heatmap QUBO rỗng |
 | `Scenarios` | Thêm kịch bản | Slider chỉ nhảy giữa 2 kịch bản |
-| `Private_Sample` | BCTC, Z', ESG của TH | Kết quả Cổng 2 hiện "—" |
+| `Private_Sample` | BCTC, Z', ESG của TH | Kết quả mẫu (khi tải Excel) hiện "—". Tải PDF BCTC thì Z' được tính thật từ tệp. |
 
 **Quyết định đã chốt khi gộp hai nguồn** (chi tiết ở sheet `Cho_xac_nhan`)
 

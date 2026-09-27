@@ -5,7 +5,7 @@ Ngữ cảnh cho Claude Code khi làm việc trong repo này.
 ## Dự án
 Nền tảng RegTech (AI + Quantum) đánh giá tín nhiệm ESG và tối ưu danh mục cho 4 DN F&B niêm yết: **VNM, SAB, MCM, SBT**. Đội QuantumRegTech – AI-Quantum Challenge 2026.
 
-**Giai đoạn hiện tại: MVP chỉ UI + dữ liệu mẫu từ file Excel.** Không triển khai Qiskit, OCR, crawler, LLM thật.
+**Giai đoạn hiện tại: MVP UI + dữ liệu mẫu từ file Excel.** Không triển khai Qiskit, crawler, LLM thật. **Ngoại lệ:** Cổng 2 có đọc PDF + OCR thật, chạy trong trình duyệt (`src/lib/ocr/`) – tệp không được gửi lên máy chủ.
 Đã có đủ 5 màn hình (trạng thái chi tiết trong `docs/UI_DESIGN.md` §4 và §6).
 
 **Next.js 16** – API khác tài liệu cũ (`params` là Promise, `error.tsx` nhận `retry`, `PageProps`/`LayoutProps` global). Đọc `AGENTS.md` và `node_modules/next/dist/docs/` trước khi dùng API lạ. shadcn/ui ở đây chạy trên **Base UI** (không phải Radix): Tooltip/Trigger dùng `render` prop thay cho `asChild`.
@@ -22,6 +22,7 @@ npm run dev     # localhost:3000
 npm run build
 npm run lint
 npm run data      # data/QuantumRegTech_Data.xlsx → src/data/*.json (tự chạy trước dev/build/test)
+npm run assets    # tài nguyên OCR (pdf.js, Tesseract, mô hình vie) → public/vendor (tự chạy trước dev/build)
 npm test          # unit test (Vitest) – đối chiếu số liệu với Phụ lục B
 npm run test:e2e  # e2e (Playwright) – lần đầu chạy: npx playwright install chromium
 ```
@@ -39,6 +40,7 @@ npm run test:e2e  # e2e (Playwright) – lần đầu chạy: npx playwright ins
 10. Ưu tiên component shadcn/ui có sẵn trước khi tự viết.
 11. Đổi số liệu hoặc logic tính → chạy `npm test`; đổi UI/luồng → chạy `npm run test:e2e` và cập nhật `tests/e2e` nếu cần.
 12. Thay đổi đáng kể (màn hình, schema, token, quy tắc) → cập nhật `docs/` tương ứng.
+13. Cổng 2 / OCR: không gửi tệp người dùng ra ngoài trình duyệt (không CDN, không API bên thứ ba); không đoán số khi OCR đọc hỏng – để `null` + cảnh báo. Sửa `lib/ocr` → chạy `npm test` và `npm run test:e2e` (có test PDF chữ và PDF scan).
 
 ## Khi nhận link Figma
 Dùng Figma MCP để đọc frame, map màu/spacing sang token có sẵn trong `globals.css` thay vì copy giá trị thô, và đặt component vào đúng thư mục theo `docs/TECH_STACK.md` mục 4.

@@ -48,3 +48,6 @@ next-env.d.ts
 
 # dữ liệu sinh từ data/QuantumRegTech_Data.xlsx (npm run data)
 /src/data/*.json
+
+# tài nguyên OCR chép từ node_modules (npm run assets)
+/public/vendor/

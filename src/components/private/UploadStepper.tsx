@@ -23,6 +23,7 @@ export function UploadStepper() {
   const [file, setFile] = useState<File | null>(null);
   const [consent, setConsent] = useState(false);
   const [stage, setStage] = useState<PrivateStage | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
   const [result, setResult] = useState<PrivateAnalysis | null>(null);
   // Chỉ giữ metadata để hiển thị nhật ký xoá – nội dung tệp bị bỏ ngay sau khi xử lý.
   const [fileMeta, setFileMeta] = useState<{ name: string; size: number } | null>(null);
@@ -35,17 +36,28 @@ export function UploadStepper() {
     setFileMeta({ name: file.name, size: file.size });
     setStatus("processing");
     try {
-      const res = await analyzePrivate(file, { onStage: setStage, signal: controller.signal });
+      const res = await analyzePrivate(file, {
+        onStage: (s) => {
+          setStage(s);
+          setProgress(null);
+        },
+        onProgress: setProgress,
+        signal: controller.signal,
+      });
       setResult(res);
       setFile(null); // Zero-Retention: bỏ tham chiếu tệp gốc
       setStatus("done");
     } catch (err) {
       setFile(null);
       setStatus("idle");
-      if ((err as Error).name === "AbortError") toast.info("Đã huỷ phân tích và xoá tệp khỏi phiên.");
+      const name = (err as Error).name;
+      if (name === "AbortError") toast.info("Đã huỷ phân tích và xoá tệp khỏi phiên.");
+      else if (name === "PasswordException") toast.error("PDF có mật khẩu – hãy gỡ mật khẩu rồi tải lên lại.");
+      else if (name === "InvalidPDFException") toast.error("Tệp PDF bị hỏng hoặc không hợp lệ.");
       else toast.error("Phân tích thất bại. Vui lòng thử lại.");
     } finally {
       setStage(null);
+      setProgress(null);
       abortRef.current = null;
     }
   }
@@ -68,7 +80,10 @@ export function UploadStepper() {
         <section className="space-y-4 rounded-2xl border bg-card p-5 shadow-sm">
           <div>
             <h3 className="text-sm font-semibold">1. Tải lên hồ sơ</h3>
-            <p className="text-xs text-muted-foreground">Báo cáo tài chính của doanh nghiệp chưa niêm yết.</p>
+            <p className="text-xs text-muted-foreground">
+              Báo cáo tài chính (mẫu B01-DN, B02-DN) của doanh nghiệp chưa niêm yết. PDF có lớp chữ hoặc PDF scan đều được – trang
+              scan sẽ được nhận dạng ký tự (OCR) ngay trên trình duyệt.
+            </p>
           </div>
           <Dropzone file={file} onChange={setFile} />
           <div className="flex items-start gap-2.5 rounded-lg bg-muted/40 p-3">
@@ -89,7 +104,7 @@ export function UploadStepper() {
       {status === "processing" && fileMeta && (
         <section className="rounded-2xl border bg-card p-5 shadow-sm">
           <h3 className="mb-4 text-sm font-semibold">2. Xử lý</h3>
-          <ProcessingPanel stage={stage} fileName={fileMeta.name} onCancel={() => abortRef.current?.abort()} />
+          <ProcessingPanel stage={stage} fileName={fileMeta.name} message={progress} onCancel={() => abortRef.current?.abort()} />
         </section>
       )}
 

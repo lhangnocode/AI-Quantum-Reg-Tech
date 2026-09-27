@@ -76,34 +76,101 @@ export async function getScenarios(): Promise<Scenario[]> {
 }
 
 export const PRIVATE_STAGES: { id: PrivateStage; label: string }[] = [
-  { id: "ocr", label: "OCR trích xuất" },
+  { id: "ocr", label: "Đọc tài liệu / OCR" },
   { id: "normalize", label: "Chuẩn hoá chỉ tiêu" },
   { id: "zscore", label: "Tính Z'-Score" },
   { id: "osint", label: "Quét OSINT" },
 ];
 
+const isPdf = (file: File) => file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+const aborted = (signal?: AbortSignal) => {
+  if (signal?.aborted) throw new DOMException("Đã huỷ", "AbortError");
+};
+
 /**
  * Cổng 2 – phân tích hồ sơ DN chưa niêm yết.
- * Mock: tệp KHÔNG rời khỏi trình duyệt; giả lập 4 bước (0,8–1,2s/bước) rồi trả kết quả mẫu.
+ * Không có backend (mặc định): xử lý NGAY TRONG TRÌNH DUYỆT, tệp không rời khỏi máy người dùng.
+ * - PDF: đọc lớp chữ / OCR trang scan → trích 9 chỉ tiêu BCTC → tính Z'. OSINT, ESG chưa tự động (Vòng 2).
+ * - Excel: chưa hỗ trợ trích xuất → trả kết quả mẫu (sheet Private_Sample).
  */
 export async function analyzePrivate(
   file: File,
-  { onStage, signal }: { onStage?: (stage: PrivateStage) => void; signal?: AbortSignal } = {}
+  {
+    onStage,
+    onProgress,
+    signal,
+  }: { onStage?: (stage: PrivateStage) => void; onProgress?: (message: string) => void; signal?: AbortSignal } = {}
 ): Promise<PrivateAnalysis> {
-  if (USE_MOCK) {
-    for (const { id } of PRIVATE_STAGES) {
-      if (signal?.aborted) throw new DOMException("Đã huỷ", "AbortError");
-      onStage?.(id);
-      await delay(800 + Math.random() * 400);
-    }
-    if (signal?.aborted) throw new DOMException("Đã huỷ", "AbortError");
+  if (!USE_MOCK) {
+    const body = new FormData();
+    body.append("file", file);
+    onStage?.("ocr");
+    return getJson("/api/v1/private/analyze", { method: "POST", body, signal });
+  }
+
+  if (isPdf(file)) {
+    // Import động: pdf.js / Tesseract chỉ tải về trình duyệt khi thật sự phân tích PDF.
+    const [{ extractPdfLines }, { parseFinancials }, { computeZPrime }] = await Promise.all([
+      import("./ocr/extract-pdf"),
+      import("./ocr/parse-financials"),
+      import("./ocr/zprime"),
+    ]);
+    onStage?.("ocr");
+    const pdf = await extractPdfLines(file, { onProgress, signal });
+    aborted(signal);
+
+    onStage?.("normalize");
+    onProgress?.("Tìm 9 chỉ tiêu theo mã số mẫu B01-DN, B02-DN…");
+    const parsed = parseFinancials(pdf.lines);
+    await delay(300);
+    aborted(signal);
+
+    onStage?.("zscore");
+    onProgress?.("Tính X1–X5 và Altman Z'…");
+    const zscore = computeZPrime(parsed.fields);
+    await delay(300);
+    aborted(signal);
+
+    onStage?.("osint");
+    onProgress?.("Quét OSINT chưa kết nối nguồn dữ liệu (Vòng 2) – bỏ qua.");
+    await delay(500);
+    aborted(signal);
+
+    const sample = privateSample as Omit<PrivateAnalysis, "deletedAt" | "source">;
     return {
-      ...(privateSample as Omit<PrivateAnalysis, "deletedAt">),
+      company: {
+        name: parsed.companyName ?? file.name.replace(/\.pdf$/i, ""),
+        subsector: "TODO",
+        listed: false,
+        fiscalYear: parsed.fiscalYear ?? "TODO",
+      },
+      zscore,
+      esg: { ...sample.esg, esgScore: "TODO", greenwashingRisk: "TODO", evidence: [] },
+      events: [],
+      posint: "TODO",
+      source: "document",
+      extraction: {
+        fileType: "pdf",
+        pages: pdf.pages,
+        processedPages: pdf.processedPages,
+        ocrPages: pdf.ocrPages,
+        unit: parsed.unit,
+        fields: parsed.fields,
+        warnings: parsed.warnings,
+      },
       deletedAt: new Date().toISOString(),
     };
   }
-  const body = new FormData();
-  body.append("file", file);
-  onStage?.("ocr");
-  return getJson("/api/v1/private/analyze", { method: "POST", body, signal });
+
+  for (const { id } of PRIVATE_STAGES) {
+    aborted(signal);
+    onStage?.(id);
+    await delay(800 + Math.random() * 400);
+  }
+  aborted(signal);
+  return {
+    ...(privateSample as Omit<PrivateAnalysis, "deletedAt" | "source">),
+    source: "sample",
+    deletedAt: new Date().toISOString(),
+  };
 }

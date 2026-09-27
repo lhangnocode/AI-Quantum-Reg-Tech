@@ -5,7 +5,17 @@ import { PRIVATE_STAGES } from "@/lib/api";
 import type { PrivateStage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function ProcessingPanel({ stage, fileName, onCancel }: { stage: PrivateStage | null; fileName: string; onCancel: () => void }) {
+export function ProcessingPanel({
+  stage,
+  fileName,
+  message,
+  onCancel,
+}: {
+  stage: PrivateStage | null;
+  fileName: string;
+  message?: string | null;
+  onCancel: () => void;
+}) {
   const idx = stage ? PRIVATE_STAGES.findIndex((s) => s.id === stage) : -1;
   const pct = Math.round(((idx + 0.5) / PRIVATE_STAGES.length) * 100);
 
@@ -34,7 +44,14 @@ export function ProcessingPanel({ stage, fileName, onCancel }: { stage: PrivateS
               {state === "done" && <CheckCircle2 className="size-4 text-risk-safe" />}
               {state === "running" && <Loader2 className="size-4 animate-spin text-primary" />}
               {state === "pending" && <Circle className="size-4" />}
-              <span className="flex-1">{s.label}</span>
+              <span className="flex-1">
+                {s.label}
+                {state === "running" && message && (
+                  <span className="block text-[11px] text-muted-foreground" aria-live="polite">
+                    {message}
+                  </span>
+                )}
+              </span>
               <span className="text-[11px] text-muted-foreground">
                 {state === "done" ? "Hoàn tất" : state === "running" ? "Đang chạy…" : "Chờ"}
               </span>

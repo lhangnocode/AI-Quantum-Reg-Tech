@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Tài nguyên OCR chép từ node_modules (npm run assets) và kết quả test.
+    "public/vendor/**",
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 

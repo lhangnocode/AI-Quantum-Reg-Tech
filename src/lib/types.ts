@@ -114,8 +114,38 @@ export interface PrivateAnalysis {
   esg: Omit<Esg, "esgScore"> & { esgScore: Todo<number> };
   events: OsintEvent[];
   posint: Todo<number>;
+  /** "document" = số liệu trích từ tệp tải lên; "sample" = kết quả mẫu (sheet Private_Sample). */
+  source: "document" | "sample";
+  /** Chi tiết trích xuất – chỉ có khi source = "document". */
+  extraction?: DocumentExtraction;
   /** ISO timestamp lúc tệp gốc bị xoá (Zero-Retention). */
   deletedAt: string;
+}
+
+/** 9 chỉ tiêu BCTC dùng cho Z': TSNH, TTS, Nợ NH, Nợ phải trả, VCSH, LNST chưa PP, DT thuần, LNTT, CP lãi vay. */
+export type FinKey = "CA" | "TA" | "CL" | "TL" | "EQ" | "RE" | "Revenue" | "PBT" | "Interest";
+
+export interface ExtractedField {
+  key: FinKey;
+  label: string;
+  /** Mã số chỉ tiêu trên mẫu BCTC (Thông tư 200). */
+  code: string;
+  value: number | null;
+  page?: number;
+  source?: "text" | "ocr";
+  /** Dòng gốc chứa số liệu – để người dùng đối chiếu. */
+  line?: string;
+}
+
+export interface DocumentExtraction {
+  fileType: "pdf";
+  pages: number;
+  processedPages: number;
+  /** Các trang phải OCR (trang ảnh scan). */
+  ocrPages: number[];
+  unit?: string;
+  fields: ExtractedField[];
+  warnings: string[];
 }
 
 export type PrivateStage = "ocr" | "normalize" | "zscore" | "osint";

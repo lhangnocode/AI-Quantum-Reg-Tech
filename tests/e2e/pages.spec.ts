@@ -47,36 +47,71 @@ test("Danh mục – kéo γ, δ về 0 chuyển sang kịch bản Baseline", as
 });
 
 test.describe("Cổng 2 – Nạp dữ liệu bảo mật", () => {
+  const FIX = "tests/fixtures/bctc-mau-qrt-2024";
+  const XLSX = { name: "bctc.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from("x") };
+
+  async function upload(page: import("@playwright/test").Page, file: string | typeof XLSX) {
+    await page.goto("/private");
+    await page.getByLabel("Chọn tệp hồ sơ").setInputFiles(file);
+    const start = page.getByRole("button", { name: "Bắt đầu phân tích" });
+    await expect(start).toBeDisabled();
+    await page.getByRole("checkbox").click();
+    await expect(start).toBeEnabled();
+    await start.click();
+  }
+
   test("từ chối tệp sai định dạng", async ({ page }) => {
     await page.goto("/private");
     await page.getByLabel("Chọn tệp hồ sơ").setInputFiles({ name: "virus.exe", mimeType: "application/octet-stream", buffer: Buffer.from("x") });
     await expect(page.getByText(/Định dạng \.exe không được hỗ trợ/)).toBeVisible();
   });
 
-  test("luồng đầy đủ: tải lên → xử lý → kết quả → xoá", async ({ page }) => {
-    await page.goto("/private");
-    const start = page.getByRole("button", { name: "Bắt đầu phân tích" });
-    await page.getByLabel("Chọn tệp hồ sơ").setInputFiles({ name: "bctc-2024.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 test") });
-    await expect(start).toBeDisabled();
-    await page.getByRole("checkbox").click();
-    await expect(start).toBeEnabled();
-    await start.click();
+  test("PDF có lớp chữ: trích 9 chỉ tiêu → Z' → xoá dữ liệu", async ({ page }) => {
+    await upload(page, `${FIX}.pdf`);
+    await expect(page.getByText("Chỉ tiêu trích xuất từ báo cáo")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("9/9 chỉ tiêu")).toBeVisible();
+    for (const v of ["612.450.318.220", "1.457.563.223.991", "844.465.681.528", "1.986.504.117.390", "31.448.917.006"]) {
+      await expect(page.getByRole("cell", { name: v, exact: true })).toBeVisible();
+    }
+    await expect(page.getByText("CÔNG TY CỔ PHẦN THỰC PHẨM MẪU QRT")).toBeVisible();
+    await expect(page.getByText("Grey").first()).toBeVisible(); // Z' ≈ 2,52 → vùng Grey
+    await expect(page.getByText("Cần kiểm tra lại")).toHaveCount(0);
 
-    await expect(page.getByText("OCR trích xuất")).toBeVisible();
-    await expect(page.getByText("Kết quả mẫu chưa có số liệu")).toBeVisible({ timeout: 10_000 });
     await page.getByRole("button", { name: "Xác nhận xoá dữ liệu gốc" }).click();
     await expect(page.getByText(/Zero-Retention: tệp gốc đã được xoá lúc \d{2}:\d{2}:\d{2}/)).toBeVisible();
-    await expect(page.getByText("bctc-2024.pdf")).toBeVisible();
-
+    await expect(page.getByText("bctc-mau-qrt-2024.pdf")).toBeVisible();
     await page.getByRole("button", { name: "Phân tích hồ sơ khác" }).click();
     await expect(page.getByText("Kéo thả hồ sơ vào đây")).toBeVisible();
   });
 
+  test("PDF scan: OCR tiếng Việt trích đủ chỉ tiêu", async ({ page }) => {
+    test.setTimeout(90_000);
+    const outside: string[] = [];
+    page.on("request", (r) => !r.url().startsWith("http://localhost") && !/^(data|blob):/.test(r.url()) && outside.push(r.url()));
+    await upload(page, `${FIX}-scan.pdf`);
+    await expect(page.getByText(/nhận dạng ký tự \(OCR\)/).first()).toBeVisible();
+    await expect(page.getByText("Chỉ tiêu trích xuất từ báo cáo")).toBeVisible({ timeout: 75_000 });
+    await expect(page.getByText(/OCR trang 1, 2/)).toBeVisible();
+    for (const v of ["612.450.318.220", "1.457.563.223.991", "613.097.542.463", "1.986.504.117.390", "142.905.330.218"]) {
+      await expect(page.getByRole("cell", { name: v, exact: true })).toBeVisible();
+    }
+    expect(outside, "tệp và OCR không được gọi ra ngoài").toEqual([]);
+  });
+
+  test("PDF hỏng → báo lỗi, quay về bước tải lên", async ({ page }) => {
+    await upload(page, { name: "hong.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 không phải pdf") });
+    await expect(page.getByText("Tệp PDF bị hỏng hoặc không hợp lệ.")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Kéo thả hồ sơ vào đây")).toBeVisible();
+  });
+
+  test("Excel → kết quả mẫu (chưa hỗ trợ trích xuất Excel)", async ({ page }) => {
+    await upload(page, XLSX);
+    await expect(page.getByText("Kết quả mẫu chưa có số liệu")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("CTCP Chuỗi Sữa TH")).toBeVisible();
+  });
+
   test("huỷ khi đang xử lý quay về bước tải lên", async ({ page }) => {
-    await page.goto("/private");
-    await page.getByLabel("Chọn tệp hồ sơ").setInputFiles({ name: "bctc.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from("x") });
-    await page.getByRole("checkbox").click();
-    await page.getByRole("button", { name: "Bắt đầu phân tích" }).click();
+    await upload(page, XLSX);
     await page.getByRole("button", { name: "Huỷ & xoá tệp" }).click();
     await expect(page.getByText("Kéo thả hồ sơ vào đây")).toBeVisible({ timeout: 5_000 });
   });

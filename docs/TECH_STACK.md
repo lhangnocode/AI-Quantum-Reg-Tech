@@ -17,6 +17,7 @@
 | Icon | **lucide-react** | Bộ icon đồng bộ với shadcn |
 | Biểu đồ cơ bản | **Recharts 3** | Radar ESG, Donut phân bổ vốn, Bar backtest |
 | Biểu đồ nâng cao | **Apache ECharts 6** (`echarts-for-react/lib/core`, import theo module) | Gauge Z-Score, Heatmap ma trận QUBO (Heatmap rủi ro: chưa làm) |
+| Đọc PDF / OCR (Cổng 2) | **pdf.js** (`pdfjs-dist` 6 – bản đã vá lỗi chạy mã khi mở PDF độc hại) + **Tesseract.js 7** + `@tesseract.js-data/vie` | Chạy trong trình duyệt; worker, lõi WASM, mô hình tiếng Việt tự host ở `public/vendor` |
 | State | **Zustand 5** (`src/store/portfolio.ts`) | Tham số α β γ δ, solver, danh sách DN theo dõi |
 | Font | **Be Vietnam Pro** (UI), **JetBrains Mono** (số liệu) qua `next/font` | Hỗ trợ tiếng Việt đầy đủ |
 | Dữ liệu | **File Excel** `data/QuantumRegTech_Data.xlsx` → `scripts/build-data.mjs` (**exceljs**) → JSON trong `src/data/` | Nguồn duy nhất; schema JSON = hợp đồng API tương lai (xem `DATA.md`) |
@@ -44,6 +45,7 @@ npx shadcn@latest add button card badge table tabs slider dialog input progress 
   sheet tooltip separator skeleton sonner dropdown-menu select alert checkbox label
 
 npm i recharts echarts echarts-for-react zustand lucide-react
+npm i pdfjs-dist@^6.3.289 tesseract.js@7 @tesseract.js-data/vie   # OCR Cổng 2
 npm i -D @types/node@^22 vitest @playwright/test exceljs   # @types/node ^22 để tương thích Vitest; exceljs đọc file Excel dữ liệu
 npx playwright install chromium
 ```
@@ -86,16 +88,20 @@ src/
 │   ├── format.ts                 # format %, tỷ VNĐ, bytes, giờ, ngày sự kiện; TODO → "—"
 │   ├── risk.ts                   # altmanZone(), ngưỡng Z/Z', nhãn & class màu theo vùng
 │   ├── use-css-vars.ts           # Đọc token CSS cho ECharts (canvas), tự cập nhật khi đổi theme
+│   ├── ocr/                      # Cổng 2: extract-pdf.ts (pdf.js + Tesseract, client), parse-financials.ts (9 chỉ tiêu), zprime.ts
 │   └── utils.ts                  # cn()
 └── store/
     └── portfolio.ts              # Zustand store
 data/
 └── QuantumRegTech_Data.xlsx      # ⭐ Nguồn dữ liệu duy nhất (xem docs/DATA.md)
 scripts/
-└── build-data.mjs                # Excel → src/data/*.json (chạy trước dev / build / test)
+├── build-data.mjs                # Excel → src/data/*.json (chạy trước dev / build / test)
+├── copy-ocr-assets.mjs           # node_modules → public/vendor (worker pdf.js, lõi Tesseract, mô hình vie) – không commit
+└── make-sample-pdf.mjs           # Tạo BCTC mẫu (DN giả định) để thử Cổng 2
 tests/
 ├── unit/                         # Vitest – format, risk, đối chiếu số liệu với Phụ lục B
-└── e2e/                          # Playwright – smoke mọi trang + luồng Cổng 1/2, Danh mục
+├── e2e/                          # Playwright – smoke mọi trang + luồng Cổng 1/2 (PDF chữ, PDF scan/OCR), Danh mục
+└── fixtures/                     # bctc-mau-qrt-2024.pdf, …-scan.pdf, …expected.json
 ```
 
 ## 5. Lớp `api.ts`
@@ -121,7 +127,7 @@ export async function getCompanies(): Promise<Company[]> {
 | `getPortfolio()` | `portfolio.json` (Params + Portfolio + Portfolio_Summary + QUBO_Matrix) | `POST /api/v1/portfolio/optimize` |
 | `getScenarios()` | `scenarios.json` (Scenarios) | – (chỉ mock; có backend thì gọi optimize trực tiếp) |
 | `getMethodology()` | `methodology.json` (Params) | `GET /api/v1/methodology` |
-| `analyzePrivate(file, { onStage, signal })` | `private_sample.json` (Private_Sample) + `deletedAt` | `POST /api/v1/private/analyze` (multipart) |
+| `analyzePrivate(file, { onStage, onProgress, signal })` | PDF: đọc / OCR ngay trong trình duyệt (`lib/ocr`, import động); Excel: `private_sample.json` (Private_Sample) | `POST /api/v1/private/analyze` (multipart) |
 
 Trang không gọi thẳng nhiều hàm lẻ mà dùng `getOverviews()` / `getOverview(ticker)` trong `lib/overview.ts`.
 
@@ -140,6 +146,7 @@ Quy tắc: **component không bao giờ `import` trực tiếp từ `src/data/`*
 ```bash
 npm run lint && npx tsc --noEmit
 npm run data        # Excel → src/data/*.json (tự chạy trước dev / build / test)
+npm run assets      # tài nguyên OCR → public/vendor (tự chạy sau install, trước dev / build)
 npm test            # Vitest – tests/unit (đối chiếu Z, Ri, lợi nhuận, RFin,Total, Σw, kết quả danh mục với Phụ lục B)
 npm run test:e2e    # Playwright – tự build + chạy server cổng 3100, test tests/e2e
 ```
@@ -155,7 +162,8 @@ Khi sửa file Excel, chạy `npm test` để chắc số liệu vẫn nhất qu
 | `scenarios.json` (slider chọn kịch bản gần nhất) | Gọi optimize trực tiếp với α β γ δ | Sửa `PortfolioOptimizer` gọi API thay vì `nearestScenario()` |
 | Sheet `OSINT` | Crawler (CafeF, Vietstock, SSC, Tổng cục Thuế) + NLP phân loại | Lưu vào Postgres/Supabase |
 | Sheet `ESG_Evidence` (bằng chứng) | LLM + RAG đối chiếu Vietnam Green Taxonomy | Trả về đoạn trích + nguồn |
-| Upload giả ở Cổng 2 (`analyzePrivate` mock) | OCR (PyMuPDF/pdfplumber) + xoá file sau xử lý (Zero-Retention) | Nhánh gọi `POST /api/v1/private/analyze` đã viết sẵn; backend nên trả tiến độ từng bước (SSE) để giữ `onStage` |
+| OCR trong trình duyệt (Cổng 2) | Giữ nguyên, hoặc OCR phía máy chủ (PyMuPDF/pdfplumber + Tesseract/PaddleOCR) cho tệp lớn + xoá file sau xử lý | Nhánh gọi `POST /api/v1/private/analyze` đã viết sẵn; backend trả cùng `PrivateAnalysis` (kể cả `extraction`) và nên trả tiến độ (SSE) để giữ `onStage` / `onProgress` |
+| Excel ở Cổng 2 (kết quả mẫu) | Đọc bảng CĐKT/KQKD từ Excel (exceljs phía client) | Dùng lại `parseFinancials` + `computeZPrime` |
 | `qubo.matrix` = `"TODO"` | Ma trận Q 16×16 xuất từ code Python → dán vào sheet `QUBO_Matrix` | `QuboHeatmap` tự hiển thị khi là `number[][]` |
 
 ## 8. Lịch triển khai gợi ý (7–10 ngày)

@@ -8,7 +8,7 @@ const PRINCIPLES = [
   {
     icon: FileLock2,
     title: "Xử lý trong phiên",
-    body: "Bản PoC: tệp không rời khỏi trình duyệt. Vòng 2: truyền qua TLS tới API OCR, không ghi xuống ổ đĩa.",
+    body: "Đọc PDF và OCR chạy ngay trên trình duyệt – tệp không được gửi lên máy chủ. Vòng 2: truyền qua TLS tới API, không ghi xuống ổ đĩa.",
   },
   {
     icon: Trash2,
@@ -29,7 +29,7 @@ export default function PrivatePage() {
         <h2 className="text-lg font-semibold">Nạp dữ liệu bảo mật</h2>
         <p className="max-w-3xl text-sm text-muted-foreground">
           Dành cho ngân hàng / quỹ thẩm định doanh nghiệp <strong className="text-foreground">chưa niêm yết</strong>: tải báo cáo
-          tài chính lên, hệ thống trích xuất chỉ tiêu, tính Altman Z&apos;-Score và quét OSINT, trả kết quả cùng định dạng Cổng 1.
+          tài chính (PDF) lên, hệ thống đọc / OCR báo cáo, trích 9 chỉ tiêu và tính Altman Z&apos;-Score, trả kết quả cùng định dạng Cổng 1.
         </p>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {PRINCIPLES.map(({ icon: Icon, title, body }) => (

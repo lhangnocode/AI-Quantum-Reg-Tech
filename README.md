@@ -34,7 +34,7 @@ Hoàn thiện **giao diện sản phẩm** chạy trên **dữ liệu mẫu** tr
 |---|---|---|
 | Dashboard | `/` | ✅ (chưa có lưới CompanyCard, heatmap rủi ro) |
 | Cổng 1 – Tra cứu công khai | `/company/[ticker]` | ✅ |
-| Cổng 2 – Nạp dữ liệu bảo mật | `/private` | ✅ (kết quả mẫu chờ số liệu) |
+| Cổng 2 – Nạp dữ liệu bảo mật | `/private` | ✅ đọc PDF + OCR BCTC ngay trên trình duyệt → Z' (ESG, OSINT của DN tải lên: Vòng 2) |
 | Tối ưu danh mục + Lõi Lượng tử | `/portfolio` | ✅ |
 | Báo cáo thẩm định (in PDF) | `/report/[ticker]` | ✅ |
 
@@ -43,6 +43,8 @@ Số liệu còn thiếu (hiển thị "—") và các điểm cần nhóm tài 
 ## Dữ liệu
 
 Nguồn dữ liệu duy nhất: **`data/QuantumRegTech_Data.xlsx`**. Sửa số liệu trong file này → lưu → `npm run data && npm test`. Các file `src/data/*.json` được sinh tự động (trước `dev` / `build` / `test`) và không commit. Chi tiết: [`docs/DATA.md`](docs/DATA.md).
+
+**Thử Cổng 2:** mở `/private`, tải `tests/fixtures/bctc-mau-qrt-2024-scan.pdf` (bản scan → OCR) hoặc `tests/fixtures/bctc-mau-qrt-2024.pdf` (có lớp chữ). Đây là BCTC của doanh nghiệp **giả định**; đáp án ở `tests/fixtures/bctc-mau-qrt-2024.expected.json`. Bộ demo đầy đủ hơn (3 DN Safe / Grey / Distress × PDF chữ, scan sạch, scan xấu) ở [`demo/pdf/`](demo/pdf/README.md) – tạo lại bằng `node scripts/make-sample-pdf.mjs --demo`.
 
 ## Chạy dự án
 
@@ -54,6 +56,7 @@ npm run dev        # http://localhost:3000
 npm run build      # kiểm tra build trước khi deploy
 npm run lint
 npm run data       # Excel → src/data/*.json (tự chạy trước dev/build/test)
+npm run assets     # tài nguyên OCR → public/vendor (tự chạy trước dev/build)
 npm test           # unit test (Vitest)
 npx playwright install chromium   # một lần, trước khi chạy e2e
 npm run test:e2e   # e2e (Playwright) – tự build và chạy server

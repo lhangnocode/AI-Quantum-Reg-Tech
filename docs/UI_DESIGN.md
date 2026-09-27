@@ -119,13 +119,18 @@ Ghi chú triển khai:
 ### 4.3 Cổng 2 – Nạp dữ liệu bảo mật – `/private` ✅
 Luồng 4 bước (stepper, component `UploadStepper`, trạng thái `idle → processing → done → deleted`):
 1. **Tải lên** – dropzone kéo-thả / bấm chọn (PDF, XLSX, XLS; tối đa 20 MB; báo lỗi ngay khi sai định dạng / quá lớn / tệp rỗng) + checkbox cam kết bảo mật. Nút "Bắt đầu phân tích" chỉ bật khi có tệp **và** đã tick.
-2. **Xử lý** – progress giả lập: `OCR trích xuất → Chuẩn hoá chỉ tiêu → Tính Z'-Score → Quét OSINT` (mỗi bước 0,8–1,2s), mỗi bước có trạng thái Chờ / Đang chạy / Hoàn tất. Nút **"Huỷ & xoá tệp"** dừng (AbortController) và quay về bước 1.
-3. **Kết quả** – tái dùng component Cổng 1 (`ZScoreGauge` mô hình Z', `XTable`, `EsgRadar`, `OsintTimeline`, `RiskFormula`) cho DN chưa niêm yết mẫu. Ngay khi xử lý xong, tham chiếu tệp gốc bị bỏ khỏi state; chỉ giữ tên + dung lượng để ghi nhật ký. Nút "Xác nhận xoá dữ liệu gốc" → bước 4.
+2. **Xử lý** – 4 bước `Đọc tài liệu / OCR → Chuẩn hoá chỉ tiêu → Tính Z'-Score → Quét OSINT`, mỗi bước có trạng thái Chờ / Đang chạy / Hoàn tất và dòng tiến độ chi tiết ("Trang 2/2: nhận dạng ký tự (OCR)…"). Nút **"Huỷ & xoá tệp"** dừng (AbortController) và quay về bước 1.
+   - **PDF – xử lý thật, ngay trong trình duyệt:** trang có lớp chữ → đọc bằng pdf.js; trang ảnh scan → render ~200 dpi, xoá đường kẻ bảng, OCR bằng Tesseract (tiếng Việt, mô hình tự host trong `public/vendor`). Tìm 9 chỉ tiêu theo **mã số** mẫu B01-DN/B02-DN + tên chỉ tiêu không dấu (chịu được lỗi dấu OCR, tên chỉ tiêu xuống dòng, dấu phân cách lệch) → tính Z'. Quét OSINT chưa kết nối (Vòng 2). PDF tối đa 12 trang đầu. BCTC 2 trang: PDF chữ ≈ 1–2 giây, PDF scan ≈ 5–7 giây.
+   - **Excel:** chưa hỗ trợ trích xuất → 4 bước giả lập rồi trả kết quả mẫu (sheet `Private_Sample`).
+   - Lỗi: PDF hỏng → "Tệp PDF bị hỏng hoặc không hợp lệ."; PDF có mật khẩu → yêu cầu gỡ mật khẩu.
+3. **Kết quả** – thẻ **"Chỉ tiêu trích xuất từ báo cáo"** (`ExtractionTable`): 9 chỉ tiêu, mã số, giá trị, trang, cách đọc (lớp chữ / OCR), **dòng gốc** để đối chiếu; cảnh báo khi thiếu chỉ tiêu, khi Tổng tài sản ≠ Nợ phải trả + VCSH (lệch > 1%), hoặc khi số có thể bị đọc sai cột. Sau đó tái dùng component Cổng 1 (`ZScoreGauge` mô hình Z', `XTable`, `EsgRadar`, `OsintTimeline`, `RiskFormula`). Ngay khi xử lý xong, tham chiếu tệp gốc, ảnh trang, worker pdf.js/Tesseract đều bị huỷ; chỉ giữ tên + dung lượng để ghi nhật ký. Nút "Xác nhận xoá dữ liệu gốc" → bước 4.
 4. **Xoá dữ liệu** – banner `Zero-Retention: tệp gốc đã được xoá lúc HH:mm:ss` (giờ lấy từ `deletedAt` do API trả) + tên/dung lượng tệp; nút "Tải báo cáo (PDF)" (`window.print()`, ẩn stepper khi in) và "Phân tích hồ sơ khác".
 
-Phía trên stepper có 3 thẻ nguyên tắc: *Xử lý trong phiên* (bản PoC: tệp không rời trình duyệt; Vòng 2: TLS tới API OCR), *Zero-Retention*, *Không chia sẻ* (kết quả không vào dữ liệu công khai Cổng 1). Badge "Cổng 2 · Bảo mật" nằm trên Header.
+Phía trên stepper có 3 thẻ nguyên tắc: *Xử lý trong phiên* (đọc PDF + OCR chạy trên trình duyệt, tệp không gửi lên máy chủ – e2e test kiểm tra không có request ra ngoài; Vòng 2: TLS tới API), *Zero-Retention*, *Không chia sẻ* (kết quả không vào dữ liệu công khai Cổng 1). Badge "Cổng 2 · Bảo mật" nằm trên Header.
 
-> ⚠️ DN mẫu của Cổng 2 là **CTCP Chuỗi Sữa TH** (chưa niêm yết – theo AQ_Input), sheet `Private_Sample` trong `data/QuantumRegTech_Data.xlsx`. Chưa có BCTC của TH nên Z', ESG hiện "—" và bước 3 hiện Alert "Kết quả mẫu chưa có số liệu". Nhóm tài chính cần điền để demo có số (xem `docs/DATA.md` §6).
+**Tệp thử:** `tests/fixtures/bctc-mau-qrt-2024.pdf` (có lớp chữ) và `tests/fixtures/bctc-mau-qrt-2024-scan.pdf` (chỉ ảnh → OCR) – BCTC của **doanh nghiệp giả định** "CTCP Thực phẩm Mẫu QRT", đáp án ở `bctc-mau-qrt-2024.expected.json` (Z' ≈ 2,52 → Grey). Tạo lại bằng `node scripts/make-sample-pdf.mjs`.
+
+> Khi tải **Excel**, kết quả là DN mẫu **CTCP Chuỗi Sữa TH** (sheet `Private_Sample`); chưa có BCTC của TH nên Z', ESG hiện "—" kèm Alert "Kết quả mẫu chưa có số liệu". Khi tải **PDF BCTC**, Z' được tính thật từ tệp.
 
 > Màn này **chưa có trong mockup Vòng 1** – ưu tiên làm để trả lời câu hỏi về bảo mật.
 
@@ -197,6 +202,7 @@ Cổng 2: /private ──► upload hồ sơ DN tư nhân → kết quả → Ze
 | `BacktestChart` | `components/charts` | Recharts BarChart | | ✅ |
 | `QuboHeatmap` | `components/charts` | ECharts heatmap | có ma trận / rỗng (TODO) | ✅ |
 | `UploadStepper` | `components/private` | Card + Progress + Checkbox | idle / processing / done / deleted | ✅ |
+| `ExtractionTable` | `components/private` | shadcn Table + Alert | đủ / thiếu chỉ tiêu, cảnh báo, OCR / lớp chữ | ✅ |
 | `StatCard`, `DashboardCard`, `ZoneBadge` | `components/dashboard` | shadcn Card + Badge | | ✅ |
 | `GatewayBadge` | `components/layout` | shadcn Badge | Cổng 1 / Cổng 2 | ✅ |
 | `EmptyChart`, `InfoTip`, `PageSkeleton` | `components/charts`, `components/common` | | | ✅ |

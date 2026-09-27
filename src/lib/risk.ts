@@ -17,6 +17,9 @@ export function altmanZone(z: number, model: "Z" | "Z'" = "Z"): AltmanZone {
   return "distress";
 }
 
+/** RFin,Base theo vùng Altman (Phụ lục B: Safe 0,10 · Distress 0,70). Vùng Grey chưa có quy định → "TODO". */
+export const RFIN_BASE_BY_ZONE: Record<AltmanZone, number | "TODO"> = { safe: 0.1, grey: "TODO", distress: 0.7 };
+
 export const ALTMAN_FORMULA: Record<"Z" | "Z'", string> = {
   Z: "Z = 1,2X1 + 1,4X2 + 3,3X3 + 0,6X4 + 1,0X5",
   "Z'": "Z' = 0,717X1 + 0,847X2 + 3,107X3 + 0,420X4 + 0,998X5",

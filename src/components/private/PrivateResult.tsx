@@ -12,6 +12,7 @@ import { ZoneBadge } from "@/components/dashboard/ZoneBadge";
 import { InfoTip } from "@/components/common/InfoTip";
 import { formatNumber, formatText } from "@/lib/format";
 import { ALTMAN_FORMULA } from "@/lib/risk";
+import { ExtractionTable } from "./ExtractionTable";
 import type { PrivateAnalysis } from "@/lib/types";
 
 /** Kết quả Cổng 2 – tái dùng component của Cổng 1 (Gauge, Radar, Timeline). */
@@ -19,7 +20,8 @@ export function PrivateResult({ result }: { result: PrivateAnalysis }) {
   const { company, zscore, esg, events, posint } = result;
   const total =
     typeof zscore.rfinBase === "number" && typeof posint === "number" ? zscore.rfinBase + posint : "TODO";
-  const hasTodo = [zscore.z, esg.esgScore, zscore.rfinBase].some((v) => v === "TODO");
+  const isSample = result.source === "sample";
+  const hasTodo = isSample && [zscore.z, esg.esgScore, zscore.rfinBase].some((v) => v === "TODO");
   const endYear = typeof company.fiscalYear === "number" ? company.fiscalYear : new Date().getFullYear();
 
   return (
@@ -33,6 +35,26 @@ export function PrivateResult({ result }: { result: PrivateAnalysis }) {
         </div>
         {zscore.zone !== "TODO" && <ZoneBadge zone={zscore.zone} />}
       </div>
+
+      {result.extraction && (
+        <DashboardCard
+          title="Chỉ tiêu trích xuất từ báo cáo"
+          description="Đối chiếu từng số với dòng gốc trước khi dùng kết quả – OCR có thể đọc sai"
+        >
+          <ExtractionTable extraction={result.extraction} />
+        </DashboardCard>
+      )}
+
+      {!isSample && (
+        <Alert>
+          <Info />
+          <AlertTitle>Phạm vi tự động của bản hiện tại</AlertTitle>
+          <AlertDescription>
+            Z&apos;-Score tính từ số liệu trích trong báo cáo. Điểm ESG và quét OSINT chưa tự động (Vòng 2) nên hiển thị “—”;
+            RFin,Total chỉ có khi đã có POSINT.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {hasTodo && (
         <Alert>

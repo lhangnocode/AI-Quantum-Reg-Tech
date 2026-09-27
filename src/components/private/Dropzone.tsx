@@ -71,7 +71,7 @@ export function Dropzone({ file, onChange }: { file: File | null; onChange: (fil
         <UploadCloud className={cn("size-8", dragging ? "text-primary" : "text-muted-foreground")} />
         <p className="text-sm font-medium">Kéo thả hồ sơ vào đây hoặc bấm để chọn tệp</p>
         <p className="text-xs text-muted-foreground">
-          Báo cáo tài chính (PDF) hoặc bảng cân đối (Excel) · tối đa {formatBytes(MAX_BYTES)}
+          Báo cáo tài chính PDF (có lớp chữ hoặc bản scan) · Excel: dùng kết quả mẫu · tối đa {formatBytes(MAX_BYTES)}
         </p>
       </button>
       <input

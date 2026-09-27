@@ -1,0 +1,50 @@
+{
+  "02-mau-qrt-grey": {
+    "company": "CÔNG TY CỔ PHẦN THỰC PHẨM MẪU QRT",
+    "fields": {
+      "CA": 612450318220,
+      "TA": 1457563223991,
+      "CL": 398221540118,
+      "TL": 613097542463,
+      "EQ": 844465681528,
+      "RE": 187340225614,
+      "Revenue": 1986504117390,
+      "PBT": 142905330218,
+      "Interest": 31448917006
+    },
+    "zPrime": 2.5246,
+    "zone": "Grey"
+  },
+  "01-an-phat-safe": {
+    "company": "CÔNG TY CỔ PHẦN SỮA VÀ ĐỒ UỐNG AN PHÁT (GIẢ ĐỊNH)",
+    "fields": {
+      "CA": 520000000000,
+      "TA": 800000000000,
+      "CL": 150000000000,
+      "TL": 200000000000,
+      "EQ": 600000000000,
+      "RE": 260118450772,
+      "Revenue": 1401114182230,
+      "PBT": 149420251832,
+      "Interest": 6902118004
+    },
+    "zPrime": 4.222,
+    "zone": "Safe"
+  },
+  "03-binh-minh-distress": {
+    "company": "CÔNG TY CỔ PHẦN NÔNG SẢN THỰC PHẨM BÌNH MINH (GIẢ ĐỊNH)",
+    "fields": {
+      "CA": 300000000000,
+      "TA": 1200000000000,
+      "CL": 700000000000,
+      "TL": 980000000000,
+      "EQ": 220000000000,
+      "RE": -180118402330,
+      "Revenue": 900283716105,
+      "PBT": -60078498780,
+      "Interest": 95118402330
+    },
+    "zPrime": 0.5676,
+    "zone": "Distress"
+  }
+}
