@@ -65,11 +65,11 @@ Vùng Altman Z' (DN chưa niêm yết – Cổng 2, theo Altman 1983): **Safe > 
 │  · Danh mục  │                                              │
 │  · Báo cáo   │                                              │
 │              │                                              │
-│ [Dữ liệu mẫu]│                                              │
+│              │                                              │
 └──────────────┴──────────────────────────────────────────────┘
 ```
 - Sidebar rộng 240px, thu gọn còn icon ở < 1024px, thành drawer ở mobile.
-- Góc dưới sidebar luôn có badge **"Dữ liệu mẫu – PoC"** để minh bạch với BGK.
+- Sidebar không còn badge "Dữ liệu mẫu – PoC" (đã bỏ theo yêu cầu); nhãn này chỉ còn trên trang báo cáo thẩm định (bản in).
 - Đã triển khai (`components/layout`): Sidebar 5 mục (Tổng quan `/`, Tra cứu `/company/VNM`, Nạp DL bảo mật `/private`, Danh mục `/portfolio`, Báo cáo `/report/VNM`), mục đang mở có nền `sidebar-accent` + chấm tròn. Header gồm tên trang + ngày, badge Cổng 2 (trang `/private`; Cổng 1 đặt trong header DN của trang), ô tìm mã CP. ⏳ Drawer mobile chưa làm.
 - Khi in (`@media print`) sidebar và header bị ẩn.
 
@@ -84,7 +84,7 @@ Vùng Altman Z' (DN chưa niêm yết – Cổng 2, theo Altman 1983): **Safe > 
 
 Khác biệt so với bản Figma (do quy tắc trong `CLAUDE.md`):
 - Bỏ số liệu Figma tự tạo (TH Group, 10,96%, 17,2%, 0,483, "giảm 23%") và ngưỡng Z sai (2,6 / 1,1).
-- Nhãn "Q-Optimized" → "Cổ điển (COBYLA)"; ô "Quantum Engine" ở sidebar → badge "Dữ liệu mẫu – PoC".
+- Nhãn "Q-Optimized" → "Cổ điển (COBYLA)"; bỏ ô "Quantum Engine" ở sidebar.
 - Radar ESG 6 trục → thanh ESGi từng DN (điểm trụ cột đang TODO).
 - Bỏ chuông thông báo và avatar người dùng (chưa có dữ liệu).
 - KPI "Lợi nhuận thực tế" hiện chênh lệch "+4,11 điểm % so với Baseline", tính từ số liệu chưa làm tròn trong file Excel (khớp Phụ lục B).
@@ -241,6 +241,6 @@ Dùng shadcn/ui + Tailwind theo docs/UI_DESIGN.md mục 4.2, dữ liệu qua src
 - [x] Có loading / empty / error cho từng trang
 - [ ] Responsive ≥ 1280px hoàn hảo; 768px dùng được – *đã kiểm tra 1440px và 820px; sidebar thu gọn icon < 1024px, chưa có drawer mobile*
 - [ ] Dark mode không vỡ biểu đồ – *token dark đã có và biểu đồ đọc đúng token, nhưng chưa có nút chuyển theme*
-- [x] Badge "Dữ liệu mẫu – PoC" luôn hiển thị
+- [x] Nhãn "Dữ liệu mẫu – PoC" trên báo cáo thẩm định (đã bỏ khỏi sidebar)
 - [x] Báo cáo in ra PDF gọn trong khổ A4
 - [x] Tính năng lượng tử luôn gắn nhãn "Mô phỏng / Vòng 2"

@@ -6,7 +6,7 @@ test.describe("smoke – mọi trang render không lỗi", () => {
       const errors: string[] = [];
       page.on("pageerror", (e) => errors.push(e.message));
       await page.goto(path);
-      await expect(page.getByText("Dữ liệu mẫu – PoC").first()).toBeVisible();
+      await expect(page.getByRole("link", { name: "Tổng quan" })).toBeVisible();
       expect(errors).toEqual([]);
     });
   }

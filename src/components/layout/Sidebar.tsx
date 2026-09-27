@@ -6,7 +6,6 @@ import {
   Atom,
   Briefcase,
   FileBarChart2,
-  FlaskConical,
   LayoutDashboard,
   Lock,
   Search,
@@ -38,7 +37,7 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-1 flex-col gap-1 px-3 pt-4">
+      <nav className="flex flex-1 flex-col gap-1 px-3 pt-4 pb-5">
         <p className="mb-2 hidden px-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase lg:block">
           Menu chính
         </p>
@@ -64,20 +63,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-
-      {/* Badge minh bạch dữ liệu – luôn hiển thị (UI_DESIGN §3) */}
-      <div className="px-3 pb-5 lg:px-4">
-        <div
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-risk-grey/30 bg-risk-grey/10 p-3 text-xs lg:justify-start"
-          title="Dữ liệu mẫu – PoC"
-        >
-          <FlaskConical className="size-3.5 shrink-0 text-risk-grey" />
-          <div className="hidden lg:block">
-            <p className="text-[11px] font-semibold text-risk-grey">Dữ liệu mẫu – PoC</p>
-            <p className="leading-snug text-muted-foreground">Phụ lục B (Vòng 1) + AQ_Input – xem data/*.xlsx</p>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }
