@@ -7,7 +7,8 @@ import { ZoneBadge } from "@/components/dashboard/ZoneBadge";
 import { PrintButton } from "@/components/report/PrintButton";
 import { ReportSection } from "@/components/report/ReportSection";
 import { buttonVariants } from "@/components/ui/button";
-import { getCompanies, getMethodology, getPortfolio } from "@/lib/api";
+import { getCompanies, getEsgIndicators, getMethodology, getPortfolio } from "@/lib/api";
+import { PILLARS, pillarDisclosure } from "@/lib/esg";
 import { assess } from "@/lib/assessment";
 import { formatBillion, formatEventDate, formatNumber, formatPct, formatText } from "@/lib/format";
 import { getOverview } from "@/lib/overview";
@@ -25,11 +26,12 @@ export async function generateMetadata(props: PageProps<"/report/[ticker]">) {
 
 export default async function ReportPage(props: PageProps<"/report/[ticker]">) {
   const { ticker } = await props.params;
-  const [overview, portfolio, method, companies] = await Promise.all([
+  const [overview, portfolio, method, companies, esgSet] = await Promise.all([
     getOverview(ticker),
     getPortfolio(),
     getMethodology(),
     getCompanies(),
+    getEsgIndicators(),
   ]);
   if (!overview) notFound();
 
@@ -119,8 +121,18 @@ export default async function ReportPage(props: PageProps<"/report/[ticker]">) {
         <ReportSection n={4} title="ESG & Tẩy xanh">
           <p>
             ESGi = <span className="font-mono font-bold">{formatNumber(esg.esgScore, 4)}</span> · Rủi ro tẩy xanh:{" "}
-            <strong>{esg.greenwashingRisk === "TODO" ? "—" : GREENWASHING_LABEL[esg.greenwashingRisk]}</strong>
+            <strong>{esg.greenwashingRisk === "TODO" ? "chưa đánh giá" : GREENWASHING_LABEL[esg.greenwashingRisk]}</strong>
           </p>
+          {esgSet.values[company.ticker] && (
+            <p className="mt-1">
+              Mức độ công bố {esgSet.year} (thực hành áp dụng · số liệu định lượng):{" "}
+              {PILLARS.map(({ key }) => {
+                const d = pillarDisclosure(esgSet, company.ticker, key);
+                return `${key} ${d.practicesYes}/${d.practicesTotal} · ${d.quantDisclosed}/${d.quantTotal}`;
+              }).join("; ")}
+              .
+            </p>
+          )}
           {esg.evidence.length > 0 ? (
             <ul className="mt-2 list-disc space-y-1 pl-5">
               {esg.evidence.map((e, i) => (

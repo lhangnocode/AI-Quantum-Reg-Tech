@@ -6,6 +6,7 @@ import { EsgRadar } from "@/components/charts/EsgRadar";
 import { ZScoreGauge } from "@/components/charts/ZScoreGauge";
 import { InfoTip } from "@/components/common/InfoTip";
 import { CompanyActions } from "@/components/company/CompanyActions";
+import { EsgDisclosure } from "@/components/company/EsgDisclosure";
 import { GreenwashingEvidence } from "@/components/company/GreenwashingEvidence";
 import { OsintTimeline } from "@/components/company/OsintTimeline";
 import { RiskFormula } from "@/components/company/RiskFormula";
@@ -13,7 +14,7 @@ import { XTable } from "@/components/company/XTable";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { ZoneBadge } from "@/components/dashboard/ZoneBadge";
 import { GatewayBadge } from "@/components/layout/GatewayBadge";
-import { getCompanies } from "@/lib/api";
+import { getCompanies, getEsgIndicators } from "@/lib/api";
 import { formatNumber, formatPct, formatText } from "@/lib/format";
 import { getOverview } from "@/lib/overview";
 import { ALTMAN_FORMULA, GREENWASHING_LABEL, GREENWASHING_ZONE, ZONE_CLASS } from "@/lib/risk";
@@ -30,11 +31,12 @@ export async function generateMetadata(props: PageProps<"/company/[ticker]">) {
 
 export default async function CompanyPage(props: PageProps<"/company/[ticker]">) {
   const { ticker } = await props.params;
-  const [overview, companies] = await Promise.all([getOverview(ticker), getCompanies()]);
+  const [overview, companies, esgSet] = await Promise.all([getOverview(ticker), getCompanies(), getEsgIndicators()]);
   if (!overview) notFound();
 
   const { company, zscore, esg, allEvents, posint, rfinTotal } = overview;
   const gw = esg.greenwashingRisk;
+  const hasPillarScores = Object.values(esg.pillars).every((v) => typeof v === "number");
 
   return (
     <div className="space-y-5">
@@ -107,10 +109,16 @@ export default async function CompanyPage(props: PageProps<"/company/[ticker]">)
         {/* ESG */}
         <DashboardCard
           title="Điểm ESG"
-          description="5 trụ cột: E, S, G, Minh bạch, Tuân thủ"
+          description={`ESGi tổng hợp · mức độ công bố ${esgSet.indicators.length} chỉ tiêu ESG năm ${esgSet.year}`}
           action={
             gw === "TODO" ? (
-              <Badge variant="outline" className="h-auto px-2 py-0.5 text-[10px]">Rủi ro tẩy xanh: —</Badge>
+              <Badge
+                variant="outline"
+                className="h-auto px-2 py-0.5 text-[10px]"
+                title="Chưa có cặp bằng chứng đối chiếu tuyên bố ↔ dữ liệu ngoại cảnh cho doanh nghiệp này"
+              >
+                Rủi ro tẩy xanh: chưa đánh giá
+              </Badge>
             ) : (
               <Badge
                 variant="secondary"
@@ -126,9 +134,8 @@ export default async function CompanyPage(props: PageProps<"/company/[ticker]">)
             <span className="text-xs text-muted-foreground">ESGi (thang 0–1)</span>
             <InfoTip label="ESGi">Điểm ESG tổng hợp dùng trong hàm mục tiêu tối ưu danh mục (trọng số γ).</InfoTip>
           </div>
-          <div className="flex-1">
-            <EsgRadar pillars={esg.pillars} />
-          </div>
+          {hasPillarScores && <EsgRadar pillars={esg.pillars} />}
+          <EsgDisclosure set={esgSet} ticker={company.ticker} peers={companies.map((c) => c.ticker)} />
         </DashboardCard>
       </div>
 

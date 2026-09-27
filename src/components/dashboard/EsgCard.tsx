@@ -42,7 +42,7 @@ export function EsgCard({ items }: { items: CompanyOverview[] }) {
         ))}
       </ul>
       <p className="mt-3 border-t pt-3 text-[10px] text-muted-foreground">
-        Điểm trụ cột E / S / G, Minh bạch, Tuân thủ: — (chờ số liệu từ nhóm tài chính)
+        Bấm vào từng DN để xem mức độ công bố 32 chỉ tiêu ESG theo trụ cột E / S / G.
       </p>
     </DashboardCard>
   );

@@ -27,6 +27,17 @@ test("Cổng 1 – MCM có bằng chứng tẩy xanh và sự kiện OSINT", asy
   await expect(page.getByText("Đã thêm MCM vào danh mục theo dõi")).toBeVisible();
 });
 
+test("Cổng 1 – mức độ công bố ESG theo trụ cột", async ({ page }) => {
+  await page.goto("/company/MCM");
+  const card = page.locator('[data-slot="card"]', { hasText: "Điểm ESG" }).first();
+  await expect(card.getByText("Môi trường (E)")).toBeVisible();
+  await expect(card.getByRole("img", { name: /Thực hành áp dụng: 2\/6/ })).toBeVisible();
+  await expect(card.getByText("Hệ thống quản lý môi trường (ISO 14001)")).toBeVisible();
+  await card.getByRole("tab", { name: "Chỉ tiêu G" }).click();
+  await expect(card.getByText("Báo cáo PTBV được kiểm toán/đảm bảo độc lập")).toBeVisible();
+  await expect(card.getByText("Chưa có điểm trụ cột E / S / G")).toHaveCount(0);
+});
+
 test("ticker không tồn tại → trang 404", async ({ page }) => {
   await page.goto("/company/XYZ");
   await expect(page.getByText("Không tìm thấy trang")).toBeVisible();

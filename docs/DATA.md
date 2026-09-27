@@ -86,7 +86,7 @@ Dòng 1 mỗi sheet = **tên cột máy đọc** (không đổi tên; rê chuộ
 | `Scenarios` | α β γ δ + tỷ trọng từng mã (cho slider) | `scenarios.json` |
 | `QUBO_Matrix` | Vùng B3:Q18 cho ma trận Q 16×16 (để trống = chưa có) | `portfolio.json → qubo.matrix` |
 | `Private_Sample` | Kết quả mẫu Cổng 2 dạng `key` / `value` (TH – chưa niêm yết), dùng khi tải tệp Excel | `private_sample.json` |
-| `ESG_ChiTieu` | 32 chỉ tiêu ESG thô 2024 của VNM, SAB, MCM, SBT, TH (từ AQ_Input) – **app chưa đọc**, dùng để tính điểm trụ cột | – |
+| `ESG_ChiTieu` | 32 chỉ tiêu ESG công bố 2024 của VNM, SAB, MCM, SBT, TH (từ AQ_Input): code, name, type (Bool/Num), pol ((+)/(-)), use (0 = loại vì thiên vị quy mô), giá trị từng DN (trống = chưa công bố), unit, rule (Gốc / Chia DT) | `esg_indicators.json` |
 | `Cho_xac_nhan` | Danh sách việc cần nhóm quyết định (mục 6) | – |
 
 Thêm doanh nghiệp: thêm dòng ở `Companies`, `Financials`, `ZScore` (chép công thức), `Market`, `ESG`, `Portfolio`, cột mới ở `Scenarios`; tỷ trọng phải tính lại bằng code tối ưu.
@@ -183,6 +183,19 @@ Kết quả Cổng 2 (`PrivateAnalysis` – `src/lib/types.ts`) = dạng trên +
 
 `Z' = 0,717X1 + 0,847X2 + 3,107X3 + 0,420X4 + 0,998X5`; vùng theo ngưỡng Z'; RFin,Base theo vùng (Safe 0,10 · Distress 0,70 · Grey chưa quy định → "—"). POSINT, ESG của DN tải lên: "TODO" (chưa tự động). Code: `src/lib/ocr/` (`extract-pdf.ts`, `parse-financials.ts`, `zprime.ts`).
 
+### `esg_indicators.json` (chỉ tiêu ESG công bố)
+```json
+{ "year": 2024, "source": "Báo cáo phát triển bền vững / thường niên 2024 – AQ_Input.xlsx (sheet ESG)",
+  "indicators": [{ "code": "E_05", "pillar": "E", "name": "Hệ thống quản lý môi trường (ISO 14001)", "type": "bool",
+                   "polarity": 1, "use": true, "sizeDependent": false },
+                 { "code": "E_09", "pillar": "E", "name": "Tỷ lệ năng lượng tái tạo", "type": "number",
+                   "polarity": 1, "use": true, "sizeDependent": false, "unit": "%" }],
+  "values": { "VNM": { "E_05": 1, "E_09": 33.03 }, "MCM": { "E_05": 0, "E_09": null } } }
+```
+- `type`: `"bool"` (có = 1 / không = 0) hoặc `"number"`; `null` = **chưa công bố**.
+- `polarity`: 1 = cao hơn là tốt, −1 = thấp hơn là tốt. `sizeDependent`: số tuyệt đối phụ thuộc quy mô (`use = 0` hoặc `rule = "Chia DT"`) → UI không xếp hạng giữa các DN.
+- UI (`src/lib/esg.ts`) chỉ **đếm**: thực hành đang áp dụng (Bool = 1) và số liệu định lượng đã công bố, theo trụ cột, bỏ chỉ tiêu `use = 0`; so với trung bình 4 DN. Đây **không phải điểm ESG**.
+
 ### `methodology.json`
 ```json
 { "riskFree": { "value": 0.0277, "source": "TPCP 10 năm – VIS Rating" },
@@ -204,6 +217,7 @@ Kết quả Cổng 2 (`PrivateAnalysis` – `src/lib/types.ts`) = dạng trên +
 | POST | `/api/v1/portfolio/optimize` body `{ tickers, params, constraints, solver }` | `portfolio.json` |
 | POST | `/api/v1/private/analyze` (multipart, field `file`) | `PrivateAnalysis`: dạng `private_sample.json` + `source`, `extraction`, `deletedAt` |
 | GET | `/api/v1/methodology` | `methodology.json` |
+| GET | `/api/v1/esg/indicators` | `esg_indicators.json` |
 | GET | `/api/v1/reports/{ticker}` | dữ liệu báo cáo |
 
 ## 6. Còn thiếu & cần nhóm quyết định
@@ -214,7 +228,7 @@ Danh sách đầy đủ (kèm quyết định) ở sheet `Cho_xac_nhan` trong fi
 
 | Sheet | Trường | Ảnh hưởng trên UI |
 |---|---|---|
-| `ESG` | E, S, G, transparency, compliance (4 DN) | Radar ESG hiện trạng thái rỗng |
+| `ESG` | E, S, G, transparency, compliance (4 DN) | Không có radar điểm trụ cột (thẻ ESG hiển thị mức độ công bố thay thế) |
 | `ESG` | greenwashing_risk của VNM, SAB, SBT | "Rủi ro tẩy xanh: —" |
 | `ESG_Evidence` | MCM claim, claim_source, taxonomy_ref | "Chưa có trích dẫn tuyên bố" |
 | `OSINT` | Tháng sự kiện MCM 2022 | Timeline đặt ở cột "Chưa rõ" |
@@ -231,7 +245,7 @@ Danh sách đầy đủ (kèm quyết định) ở sheet `Cho_xac_nhan` trong fi
 | 2 | OSINT MCM 2022: "Phạt xả thải" (Phụ lục B) vs "Phản ánh, chưa có QĐ" (AQ_Input) | **Dùng mô tả AQ_Input**, giữ điểm phạt +0,10 | Nguồn mới, cụ thể hơn; ghi "bị phạt" khi không có quyết định là sai sự thật về DN thật. Rubric AQ_Input cũng chấm mức này 0,10 → không đổi kết quả. **Cần sửa lời thuyết minh / slide "phạt xả thải".** |
 | 3 | OSINT SAB 2024 (phạt thuế) không có số QĐ / link | **Không đưa vào** (POSINT SAB = 0) | Quy tắc của chính AQ_Input: chỉ ghi sự kiện có nguồn. Khi có nguồn: +0,05 → RFin,Total SAB = 0,15 → phải chạy lại tối ưu. |
 | 4 | OSINT TH 2023 (phạt 560 triệu) chưa xác minh pháp nhân | **Không đưa vào** Cổng 2 | Cùng quy tắc; chưa chắc đúng pháp nhân bị phạt. |
-| 5 | Điểm trụ cột E/S/G, Minh bạch, Tuân thủ | **Để trống (TODO)** | Tự chấm điểm = tự đặt phương pháp; kết quả sẽ không khớp ESGi đã công bố; "Minh bạch", "Tuân thủ" không có nhóm chỉ tiêu riêng. Chờ `aq_v3.py`. |
+| 5 | Điểm trụ cột E/S/G, Minh bạch, Tuân thủ | **Để trống (TODO)**; thay bằng **mức độ công bố** từ `ESG_ChiTieu` | Tự chấm điểm = tự đặt phương pháp; kết quả sẽ không khớp ESGi đã công bố; "Minh bạch", "Tuân thủ" không có nhóm chỉ tiêu riêng. UI hiển thị số thực hành / số liệu đã công bố (đếm trên dữ liệu thật). Khi có `aq_v3.py`: điền điểm vào sheet `ESG` → radar tự hiện. |
 | 6 | β SBT: 0,761 (Phụ lục B) vs 0,76 (AQ_Input) | **Giữ 0,761** | 0,76 là số làm tròn; 0,761 cho Ri = 9,12% khớp Phụ lục B. |
 
 **Còn mở:** niên độ SBT (kết thúc 30/6/2024 – cần đối chiếu BCTC kiểm toán); α β γ δ, ma trận QUBO, thêm kịch bản (IT lấy từ code Python).

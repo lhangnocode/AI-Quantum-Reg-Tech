@@ -160,3 +160,29 @@ export interface Methodology {
   posintTiers: string;
   dataSource: string;
 }
+
+/** Chỉ tiêu ESG công bố – sheet ESG_ChiTieu (docs/DATA.md §5). */
+export type EsgPillar = "E" | "S" | "G";
+
+export interface EsgIndicator {
+  code: string;
+  pillar: EsgPillar;
+  name: string;
+  /** "bool": có / không thực hành; "number": số liệu định lượng. */
+  type: "bool" | "number";
+  /** 1: cao hơn là tốt; -1: thấp hơn là tốt. */
+  polarity: 1 | -1;
+  /** false: chỉ tiêu bị loại khỏi chấm điểm (thiên vị quy mô) – chỉ để tham khảo. */
+  use: boolean;
+  /** Số tuyệt đối phụ thuộc quy mô (tổng nước, năng lượng, ngân sách…) → không xếp hạng trực tiếp. */
+  sizeDependent: boolean;
+  unit?: string;
+}
+
+export interface EsgIndicatorSet {
+  year: number;
+  source: string;
+  indicators: EsgIndicator[];
+  /** values[ticker][code]: số (bool = 0/1) hoặc null nếu chưa công bố. */
+  values: Record<Ticker, Record<string, number | null>>;
+}

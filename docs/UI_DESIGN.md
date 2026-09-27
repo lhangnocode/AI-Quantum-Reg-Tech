@@ -103,7 +103,7 @@ Các khu vực trong bảng dưới **chưa** có ở bản hiện tại: ⏳ L�
 |---|---|---|
 | Header DN | Tên, mã, sàn, ngành, badge "Cổng 1 · Công khai" | |
 | Z-Score | `ZScoreGauge` (ECharts gauge, 3 dải màu) + bảng X1–X5 | Tooltip công thức Z |
-| ESG | `EsgRadar` (E, S, G, Minh bạch, Tuân thủ) + điểm ESGi | |
+| ESG | Điểm ESGi + `EsgDisclosure` (mức độ công bố 32 chỉ tiêu theo E / S / G) + `EsgRadar` khi có điểm trụ cột | |
 | **Bằng chứng Tẩy xanh** | `GreenwashingEvidence`: 2 cột "Doanh nghiệp tuyên bố" ↔ "Dữ liệu ngoại cảnh", mỗi cặp có mức mâu thuẫn + nguồn | Điểm "khoe AI" chính |
 | OSINT | `OsintTimeline` 36 tháng, chấm màu theo mức 1/2/3, điểm phạt POSINT | |
 | Tổng hợp rủi ro | Công thức trực quan: `RFin,Base + POSINT = RFin,Total` | |
@@ -112,7 +112,8 @@ Các khu vực trong bảng dưới **chưa** có ở bản hiện tại: ⏳ L�
 Ghi chú triển khai:
 - Thanh chọn nhanh 4 mã ở đầu trang; ô tìm mã CP trên Header chuyển tới `/company/{MÃ}`; mã không tồn tại → trang 404 tiếng Việt.
 - Bảng X1–X5 có số thật (tính từ BCTC 2024 trong file Excel).
-- `EsgRadar` hiện trạng thái rỗng "Chưa có điểm trụ cột E / S / G" vì `pillars` đang TODO – không tự điền số.
+- Thẻ **Điểm ESG**: ESGi (Phụ lục B) + `EsgDisclosure` – mỗi trụ cột E / S / G có 2 thanh: *Thực hành áp dụng* (chỉ tiêu có / không đang = Có) và *Số liệu định lượng* (đã công bố), nhãn "x/y" luôn hiển thị, vạch đen = trung bình 4 DN; tab "Chỉ tiêu E / S / G" liệt kê từng chỉ tiêu: giá trị thật (Có / Không / số + đơn vị / "Chưa công bố") và hạng trong 4 DN theo chiều tốt (↑ cao hơn là tốt, ↓ thấp hơn là tốt). Chỉ tiêu số tuyệt đối phụ thuộc quy mô (tổng phát thải, nước, năng lượng, ngân sách xã hội, số nhân viên) **không xếp hạng** để tránh "DN nhỏ = phát thải ít = tốt"; chỉ tiêu bị loại khỏi chấm điểm gắn nhãn "Tham khảo". Ghi rõ "đây là mức độ công bố, không phải điểm ESG". `EsgRadar` chỉ hiện khi sheet `ESG` có đủ điểm trụ cột.
+- Badge rủi ro tẩy xanh khi chưa có dữ liệu: "Rủi ro tẩy xanh: chưa đánh giá" (thay cho "—").
 - `OsintTimeline`: lưới 3 năm × 12 tháng (kết thúc ở năm tài chính) + cột "Chưa rõ" cho sự kiện có ngày dạng `2022-TODO`; hover chấm → tooltip loại, mức, POSINT, nguồn.
 - "Thêm vào danh mục" lưu mã vào Zustand (`watchlist`), hiện toast; `/portfolio` hiển thị "Đang theo dõi từ Cổng 1".
 
@@ -189,6 +190,7 @@ Cổng 2: /private ──► upload hồ sơ DN tư nhân → kết quả → Ze
 |---|---|---|---|---|
 | `CompanyCard` | – | shadcn Card + Badge | default, hover, alert | ⏳ |
 | `ZScoreGauge` | `components/charts` | ECharts gauge | Safe / Grey / Distress; mô hình Z / Z'; không có số (không kim, "—") | ✅ |
+| `EsgDisclosure` | `components/company` | Meter + shadcn Tabs + Table | có / thiếu dữ liệu, hạng / không xếp hạng | ✅ |
 | `EsgRadar` | `components/charts` | Recharts RadarChart | 1 DN ✅ / so sánh 2 DN ⏳; rỗng khi pillars TODO ✅ | ✅ |
 | `RiskHeatmap` | – | ECharts heatmap | | ⏳ |
 | `GreenwashingEvidence` | `components/company` | Card + Badge | có / không có mâu thuẫn | ✅ |

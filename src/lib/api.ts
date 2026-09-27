@@ -7,9 +7,11 @@ import portfolio from "@/data/portfolio.json";
 import scenarios from "@/data/scenarios.json";
 import privateSample from "@/data/private_sample.json";
 import methodology from "@/data/methodology.json";
+import esgIndicators from "@/data/esg_indicators.json";
 import type {
   Company,
   Esg,
+  EsgIndicatorSet,
   Methodology,
   OsintEvent,
   PortfolioResult,
@@ -61,6 +63,12 @@ export async function getOsintEvents(ticker: Ticker, months = 36): Promise<Osint
 export async function getPortfolio(): Promise<PortfolioResult> {
   if (USE_MOCK) { await delay(800); return portfolio as PortfolioResult; }
   return getJson("/api/v1/portfolio/optimize", { method: "POST" });
+}
+
+/** 32 chỉ tiêu ESG công bố (năm 2024) của các DN – nền cho mức độ công bố theo trụ cột E / S / G. */
+export async function getEsgIndicators(): Promise<EsgIndicatorSet> {
+  if (USE_MOCK) { await delay(150); return esgIndicators as EsgIndicatorSet; }
+  return getJson("/api/v1/esg/indicators");
 }
 
 /** Tham số chung & phương pháp (Rf, ERP, CAPM, Altman, POSINT). */

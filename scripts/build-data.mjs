@@ -176,6 +176,30 @@ const methodology = {
   dataSource: params.data_source,
 };
 
+// Chỉ tiêu ESG công bố (sheet ESG_ChiTieu): Bool = có / không thực hành, Num = số liệu định lượng; ô trống = chưa công bố.
+const esgRows = readTable(wb, "ESG_ChiTieu");
+const esgTickers = Object.keys(esgRows[0] ?? {}).filter((k) => /^[A-Z]{2,4}$/.test(k));
+const esgIndicators = {
+  year: 2024,
+  source: "Báo cáo phát triển bền vững / thường niên 2024 – AQ_Input.xlsx (sheet ESG)",
+  indicators: esgRows.map((r) => ({
+    code: r.code,
+    pillar: r.code.slice(0, 1),
+    name: r.name,
+    type: r.type === "Bool" ? "bool" : "number",
+    // (+) cao hơn là tốt, (-) thấp hơn là tốt.
+    polarity: String(r.pol).includes("-") ? -1 : 1,
+    // use = 0: chỉ tiêu bị loại khỏi chấm điểm (thiên vị quy mô) – chỉ để tham khảo.
+    use: r.use === 1,
+    // Số tuyệt đối phụ thuộc quy mô DN (rule "Chia DT" hoặc bị loại) → không xếp hạng trực tiếp giữa các DN.
+    sizeDependent: r.rule === "Chia DT" || r.use !== 1,
+    ...(r.unit ? { unit: r.unit } : {}),
+  })),
+  values: Object.fromEntries(
+    esgTickers.map((t) => [t, Object.fromEntries(esgRows.map((r) => [r.code, typeof r[t] === "number" ? r[t] : null]))])
+  ),
+};
+
 const files = {
   "companies.json": companies,
   "zscore.json": zscore,
@@ -185,6 +209,7 @@ const files = {
   "scenarios.json": scenarios,
   "private_sample.json": privateSample,
   "methodology.json": methodology,
+  "esg_indicators.json": esgIndicators,
 };
 mkdirSync(OUT, { recursive: true });
 for (const [name, data] of Object.entries(files)) writeFileSync(join(OUT, name), JSON.stringify(data, null, 2) + "\n");

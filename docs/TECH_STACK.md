@@ -72,7 +72,7 @@ src/
 │   ├── ui/                       # shadcn (tự sinh; slider.tsx có thêm prop getAriaLabel)
 │   ├── charts/                   # ZScoreGauge, EsgRadar, AllocationDonut, BacktestChart, QuboHeatmap, EmptyChart
 │   ├── dashboard/                # DashboardCard, StatCard, ZoneBadge, EsgCard, FinancialHealthCard, OsintCard
-│   ├── company/                  # XTable, GreenwashingEvidence, OsintTimeline, RiskFormula, CompanyActions
+│   ├── company/                  # XTable, GreenwashingEvidence, OsintTimeline, RiskFormula, CompanyActions, EsgDisclosure
 │   ├── private/                  # UploadStepper, StepperHeader, Dropzone, ProcessingPanel, PrivateResult, RetentionBanner
 │   ├── portfolio/                # PortfolioOptimizer, WeightSliders, WeightTable, CompareTable, QuantumCore
 │   ├── report/                   # ReportSection, PrintButton
@@ -85,6 +85,7 @@ src/
 │   ├── overview.ts               # Ghép companies + zscore + esg + osint → CompanyOverview (tính POSINT, RFin,Total)
 │   ├── portfolio.ts              # nearestScenario(), portfolioReturn()
 │   ├── assessment.ts             # Kết luận tổng của báo cáo (quy tắc ở UI_DESIGN §4.5)
+│   ├── esg.ts                    # Mức độ công bố ESG theo trụ cột, trung bình nhóm, xếp hạng chỉ tiêu
 │   ├── format.ts                 # format %, tỷ VNĐ, bytes, giờ, ngày sự kiện; TODO → "—"
 │   ├── risk.ts                   # altmanZone(), ngưỡng Z/Z', nhãn & class màu theo vùng
 │   ├── use-css-vars.ts           # Đọc token CSS cho ECharts (canvas), tự cập nhật khi đổi theme
@@ -127,6 +128,7 @@ export async function getCompanies(): Promise<Company[]> {
 | `getPortfolio()` | `portfolio.json` (Params + Portfolio + Portfolio_Summary + QUBO_Matrix) | `POST /api/v1/portfolio/optimize` |
 | `getScenarios()` | `scenarios.json` (Scenarios) | – (chỉ mock; có backend thì gọi optimize trực tiếp) |
 | `getMethodology()` | `methodology.json` (Params) | `GET /api/v1/methodology` |
+| `getEsgIndicators()` | `esg_indicators.json` (ESG_ChiTieu) | `GET /api/v1/esg/indicators` |
 | `analyzePrivate(file, { onStage, onProgress, signal })` | PDF: đọc / OCR ngay trong trình duyệt (`lib/ocr`, import động); Excel: `private_sample.json` (Private_Sample) | `POST /api/v1/private/analyze` (multipart) |
 
 Trang không gọi thẳng nhiều hàm lẻ mà dùng `getOverviews()` / `getOverview(ticker)` trong `lib/overview.ts`.

@@ -51,3 +51,7 @@ next-env.d.ts
 
 # tài nguyên OCR chép từ node_modules (npm run assets)
 /public/vendor/
+
+# file khoá của LibreOffice / Excel khi đang mở tệp
+.~lock.*#
+~$*
