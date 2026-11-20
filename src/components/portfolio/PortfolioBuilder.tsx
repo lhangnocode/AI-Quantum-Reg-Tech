@@ -158,7 +158,6 @@ export function PortfolioBuilder({ records, penaltyTable, osintPeriod }: { recor
         capital={capital}
         acceptedOsintLevels={Object.fromEntries(selectedRecords.map((record) => [record.ticker, acceptedLevels[`${dataYear}:${record.ticker}`] ?? 0]))}
         onApply={(nextWeights) => setAppliedOptimizer({ dataYear, tickers: selectedRecords.map((record) => record.ticker), weights: nextWeights })}
-        onReturnToManual={() => setAppliedOptimizer(null)}
       />
 
       <Card>

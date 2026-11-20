@@ -59,6 +59,7 @@ next-env.d.ts
 # vị trí cũ (trước khi chuyển sang data/generated) – tránh commit nhầm file cũ còn trong máy
 /src/data/
 /data/research/raw/
+/data/latest_financial_data.json
 
 # tài nguyên OCR chép từ node_modules (npm run assets)
 /public/vendor/

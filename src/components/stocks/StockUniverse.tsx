@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { FinancialDataSync } from "@/components/stocks/FinancialDataSync";
 import { formatNumber, formatPct } from "@/lib/format";
 import type { CompanyOverview } from "@/lib/overview";
 import { usePortfolioStore } from "@/store/portfolio";
@@ -93,7 +94,9 @@ export function StockUniverse({ items }: { items: CompanyOverview[] }) {
         {pendingTickers.length > 0 && <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3 text-xs"><span className="text-muted-foreground">Đang chờ dữ liệu:</span>{pendingTickers.map((ticker) => <Badge key={ticker} variant="outline">{ticker} · Chờ dữ liệu</Badge>)}</div>}
       </DashboardCard>
 
-      <DashboardCard title="Danh sách cổ phiếu có dữ liệu" description="Danh sách lấy từ bộ dữ liệu lịch sử. Mã chưa có trường dữ liệu sẽ không được tự tạo chỉ số.">
+      <FinancialDataSync tickers={portfolioTickers} />
+
+      <DashboardCard title="Chỉ số phân tích" description="Z-Score, CAPM và ESG theo bộ dữ liệu đã chuẩn hóa; báo cáo mới nhất được cập nhật ở khối phía trên.">
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-56 flex-1">

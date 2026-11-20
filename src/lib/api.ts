@@ -88,7 +88,6 @@ export async function getEsgIndicators(): Promise<EsgIndicatorSet> {
       return {
         ...localIndicator,
         ...remoteIndicator,
-        values: { ...(localIndicator?.values ?? {}), ...(remoteIndicator?.values ?? {}) },
       } as EsgIndicatorSet["indicators"][number];
     });
     return { ...local, ...remote, indicators, values: { ...local.values, ...remote.values } };

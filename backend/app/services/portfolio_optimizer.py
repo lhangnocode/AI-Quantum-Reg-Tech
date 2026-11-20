@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import os
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,7 @@ from app.core.config import ROOT
 from app.repositories.workbook import load_data_file
 
 
-PRICE_PATH = ROOT / "data" / "market_prices_monthly.csv"
+PRICE_PATH = Path(os.getenv("MARKET_PRICE_PATH") or ROOT / "data" / "market_prices_monthly.csv")
 PRICE_COLUMNS = ("VNM", "MCH", "MCM", "SBT", "QNS", "KDC", "PAN", "IDP", "SAB", "VNINDEX")
 WINDOW_MONTHS = 36
 MIN_OBSERVATIONS = 11
