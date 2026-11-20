@@ -9,7 +9,6 @@ import { NAV_ITEMS } from "./Sidebar";
 import { logout } from "@/app/auth-actions";
 
 const today = new Intl.DateTimeFormat("vi-VN", { day: "numeric", month: "long", year: "numeric" });
-const FINANCIAL_ENGINE_TICKERS = new Set(["MCH", "QNS", "KDC", "PAN", "IDP"]);
 
 type HeaderProps = {
   user: {
@@ -39,7 +38,7 @@ export function Header({ user }: HeaderProps) {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const ticker = query.trim().toUpperCase();
-    if (ticker) router.push(FINANCIAL_ENGINE_TICKERS.has(ticker) ? `/financial-engine#${ticker}` : `/company/${ticker}`);
+    if (ticker) router.push(`/company/${ticker}`);
   }
 
   return (

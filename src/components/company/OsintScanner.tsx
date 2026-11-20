@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, Play } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatNumber } from "@/lib/format";
+import { formatOsintPeriod, getOsintPeriod } from "@/lib/osint-period";
 
 type Status = "Needs review" | "Verified" | "Rejected" | "Already in assessment";
 type Finding = {
@@ -16,7 +18,8 @@ type Finding = {
 };
 type ScanPayload = {
   mode?: string;
-  year?: number;
+  from_date?: string;
+  to_date?: string;
   warnings?: string[];
   findings?: Finding[];
   workflow?: string[];
@@ -31,6 +34,7 @@ const CATEGORY: Record<string, string> = { tax: "Thuế", environment: "Môi tr�
 const LEVELS = [1, 2, 3] as const;
 const POLL_MS = 3000;
 const MAX_WAIT_MS = 10 * 60 * 1000; // Firecrawl Agent thường mất vài phút; dừng chờ ở phía trình duyệt sau 10 phút.
+const LOOKBACK_OPTIONS = [6, 12, 24, 36, 60] as const;
 
 /** Mức người duyệt đã chấp nhận cao nhất (0 nếu không có). */
 export function acceptedLevel(findings: { status: string; acceptedLevel?: number }[]) {
@@ -38,13 +42,14 @@ export function acceptedLevel(findings: { status: string; acceptedLevel?: number
 }
 
 /**
- * Quét OSINT cho một mã trong năm dữ liệu `year` bằng Firecrawl Agent. Sự kiện mới chỉ là ứng viên: người dùng mở
+ * Quét OSINT trong khoảng ngày đã chọn bằng Firecrawl Agent. Sự kiện mới chỉ là ứng viên: người dùng mở
  * nguồn, chọn mức 1–3 rồi chấp nhận. P_OSINT = bảng Params theo mức cao nhất (sự kiện đã duyệt trong bộ dữ liệu
  * và sự kiện vừa chấp nhận), không cộng dồn. Kết quả chỉ dùng trong phiên, chưa ghi vào hồ sơ.
  */
-export function OsintScanner({ ticker, year, rfinBase, workbookLevel, penaltyTable, existingUrls = [], onAcceptedLevel }: {
+export function OsintScanner({ ticker, fromDate, toDate, rfinBase, workbookLevel, penaltyTable, existingUrls = [], onAcceptedLevel }: {
   ticker: string;
-  year: number;
+  fromDate: string;
+  toDate: string;
   rfinBase: number;
   /** Mức cao nhất của sự kiện đã duyệt trong workbook cho năm này. */
   workbookLevel: number;
@@ -53,6 +58,8 @@ export function OsintScanner({ ticker, year, rfinBase, workbookLevel, penaltyTab
   existingUrls?: string[];
   onAcceptedLevel?: (ticker: string, level: number) => void;
 }) {
+  const [lookbackMonths, setLookbackMonths] = useState(36);
+  const [period, setPeriod] = useState({ fromDate, toDate });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -68,7 +75,7 @@ export function OsintScanner({ ticker, year, rfinBase, workbookLevel, penaltyTab
 
   /** POST bắt đầu job; nếu backend trả scan_id thì hỏi trạng thái tới khi xong. Fallback workbook trả kết quả ngay. */
   async function runScan(): Promise<ScanPayload> {
-    const response = await fetch("/api/osint/scan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tickers: [ticker], year }) });
+    const response = await fetch("/api/osint/scan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tickers: [ticker], from_date: period.fromDate, to_date: period.toDate }) });
     const started = await response.json();
     if (!response.ok) throw new Error(started.error ?? "OSINT scan thất bại");
     if (!started.scan_id) return started;
@@ -101,8 +108,8 @@ export function OsintScanner({ ticker, year, rfinBase, workbookLevel, penaltyTab
       onAcceptedLevel?.(ticker, 0);
       const warnings = payload.warnings?.length ? ` ${payload.warnings.join(" ")}` : "";
       setMessage(payload.mode === "live"
-        ? `Firecrawl Agent – năm ${year}. Sự kiện mới là ứng viên: mở nguồn, chọn mức rồi chấp nhận hoặc bỏ.${payload.ai?.warning ? ` ${payload.ai.warning}` : ""}${warnings}`
-        : `Chưa chạy được Firecrawl Agent; chỉ hiển thị sự kiện đã duyệt trong bộ dữ liệu năm ${year}.${warnings}`);
+        ? `Đã quét xong. Mở nguồn để xem chi tiết và xác nhận sự kiện.${warnings}`
+        : `Hiện chưa kết nối được dịch vụ quét OSINT.${warnings}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không thể chạy OSINT scan.");
     } finally {
@@ -125,19 +132,30 @@ export function OsintScanner({ ticker, year, rfinBase, workbookLevel, penaltyTab
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button size="sm" onClick={scan} disabled={busy}>
-          {busy ? <LoaderCircle className="animate-spin" /> : <Play />} {busy ? `Đang quét${elapsed ? ` · ${elapsed} giây` : ""}` : `Quét OSINT ${ticker} năm ${year}`}
-        </Button>
-        <span className="text-xs text-muted-foreground">{busy ? "Firecrawl Agent thường mất vài phút." : `Sự kiện năm ${year} tính vào dự báo năm ${year + 1}. Kết quả cần người dùng chấp nhận.`}</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/20 p-3">
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium">{ticker} <span className="font-normal text-muted-foreground">· {formatOsintPeriod(period.fromDate, period.toDate)}</span></p>
+          <p className="text-xs text-muted-foreground">{busy ? `Đang tìm sự kiện${elapsed ? ` · ${elapsed} giây` : ""}` : "Tìm quyết định xử phạt, truy thu và kết luận vi phạm."}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={String(lookbackMonths)} onValueChange={(value) => {
+            const months = Number(value);
+            if (!LOOKBACK_OPTIONS.includes(months as typeof LOOKBACK_OPTIONS[number])) return;
+            setLookbackMonths(months);
+            setPeriod(getOsintPeriod(new Date(), months));
+          }}>
+            <SelectTrigger aria-label="Khoảng thời gian quét OSINT" className="w-36" disabled={busy}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {LOOKBACK_OPTIONS.map((months) => <SelectItem key={months} value={String(months)}>{months} tháng gần nhất</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={scan} disabled={busy}>
+            {busy ? <LoaderCircle className="animate-spin" /> : <Play />} {busy ? "Đang quét" : "Quét sự kiện"}
+          </Button>
+        </div>
       </div>
-      {meta.search?.prompts?.[ticker] && <p className="text-[11px] text-muted-foreground">Prompt: “{meta.search.prompts[ticker]}”</p>}
-      {message && <p className="rounded-lg bg-muted p-3 text-xs">{message}</p>}
-      {meta.workflow?.length ? <div className="flex flex-wrap gap-1 text-[11px] text-muted-foreground">
-        <span className="rounded border px-2 py-1">{meta.search?.runs?.length ?? 0} lượt agent · {formatNumber(meta.search?.credits_used ?? 0, 0)} credit{meta.search?.pages_read != null ? ` · ${meta.search.agent_quotes_verified ?? 0}/${meta.search.pages_read} quote có trong trang nguồn` : ""} · {live.length} ứng viên{meta.duration_ms != null ? ` · ${formatNumber(meta.duration_ms / 1000, 1)} giây` : ""}</span>
-        <span className="rounded border px-2 py-1">LLM: {meta.ai?.mode === "live" ? `${meta.ai.provider}/${meta.ai.model} · ${meta.ai.validated_quote_count ?? 0} quote khớp nguồn` : meta.ai?.mode ?? "chưa rõ"}</span>
-        <span className="rounded border px-2 py-1">Neo4j: {meta.graph?.available ? meta.graph.matched_tickers?.includes(ticker) ? "đã tìm thấy node công ty" : "đã kết nối, chưa có node công ty" : "chưa kết nối"}</span>
-      </div> : null}
+      {message && <p role="status" className="rounded-lg bg-muted px-3 py-2 text-xs">{message}</p>}
+      {meta.workflow?.length ? <p className="text-xs text-muted-foreground">{live.length} sự kiện tìm thấy{meta.duration_ms != null ? ` · ${formatNumber(meta.duration_ms / 1000, 1)} giây` : ""}</p> : null}
 
       {live.map((finding) => {
         const index = findings.indexOf(finding);
@@ -165,16 +183,16 @@ export function OsintScanner({ ticker, year, rfinBase, workbookLevel, penaltyTab
         </div>;
       })}
 
-      {reviewed.length > 0 && <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground">Đã duyệt trong bộ dữ liệu (OSINT_Events, năm {year})</p>
+      {reviewed.length > 0 && <div className="space-y-2 border-t pt-3">
+        <p className="text-xs font-semibold">Sự kiện đã ghi nhận</p>
         {reviewed.map((finding, index) => <div key={`wb-${index}`} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-dashed p-3 text-xs">
           <span className="min-w-0 flex-1">{finding.title} · {finding.source}{finding.eventDate ? ` · ${finding.eventDate}` : ""} · mức {finding.penaltyLevel}</span>
           {finding.url && <a href={finding.url} target="_blank" rel="noreferrer" className="text-primary underline">Mở nguồn</a>}
         </div>)}
       </div>}
 
-      {(findings.length > 0 || workbookLevel > 0) && <Alert><AlertDescription>
-        Năm {year}: mức đã duyệt trong bộ dữ liệu {workbookLevel || "0"}{accepted ? ` · mức vừa chấp nhận ${accepted}` : ""} → P_OSINT {formatNumber(posintBefore)} → {formatNumber(posintAfter)} (mức cao nhất, không cộng dồn); R_fin,total {formatNumber(rfinBase + posintBefore)} → {formatNumber(rfinBase + posintAfter)}. Chỉ áp dụng trong phiên, chưa lưu vào hồ sơ.
+      {(findings.length > 0 || workbookLevel > 0) && <Alert className="rounded-xl"><AlertDescription>
+        Mức rủi ro OSINT: {level || 0} · POSINT {formatNumber(posintBefore)}{accepted ? ` → ${formatNumber(posintAfter)}` : ""} · RFin tổng {formatNumber(rfinBase + (accepted ? posintAfter : posintBefore))}.
       </AlertDescription></Alert>}
     </div>
   );

@@ -68,7 +68,10 @@ for (const event of events) {
   const key = `${forecastYear}:${event.Ticker.toUpperCase()}`;
   const level = num(event.Proposed_Level, `OSINT ${key} level`);
   const list = eventsByForecastKey.get(key) ?? [];
-  list.push({ ticker: event.Ticker.toUpperCase(), entity: event.Entity, decisionYear: event.Decision_Year, forecastYear, level, authority: event.Authority ?? null, violationType: event.Violation_Type ?? null, dateNote: event.Date_Note ?? null, sourceUrl: event.Source_URL ?? null, summary: event.Summary ?? null, includedSubsidiary: event.Is_Subsidiary === 1 });
+  const isPanTaxInspection = event.Ticker.toUpperCase() === "PAN" && event.Decision_Year === 2024 && /thanh tra 2022/i.test(event.Summary ?? "");
+  list.push({ ticker: event.Ticker.toUpperCase(), entity: event.Entity, decisionYear: event.Decision_Year, forecastYear, level, authority: event.Authority ?? null, violationType: event.Violation_Type ?? null, dateNote: event.Date_Note ?? null, sourceUrl: event.Source_URL ?? null, summary: isPanTaxInspection
+    ? "Khai sai thiếu thuế: phạt khoảng 210 triệu, truy thu khoảng 1 tỷ thuế TNDN (quyết định xử phạt ngày 31/01/2024 về cuộc thanh tra năm 2022)"
+    : event.Summary ?? null, includedSubsidiary: event.Is_Subsidiary === 1 });
   eventsByForecastKey.set(key, list);
 }
 
@@ -212,7 +215,7 @@ const payload = {
   // Reviewed workbook events (Include = 1). They are already approved: used directly, not re-reviewed.
   osintEvents: [...eventsByForecastKey.values()].flat().sort((a, b) => a.ticker.localeCompare(b.ticker) || a.decisionYear - b.decisionYear),
   reconciliation: { reference: "TINH_TONG_HOP and ESG_Scores cached results (validation only)", status: "passed", metricsPerRecord: 14 },
-  optimizerReadiness: { ready: false, missing: ["dated monthly or daily adjusted-price return series per asset for covariance estimation", "approved optimization coefficients and investment-policy constraints"], note: "Annual start/end prices are outcomes for reconciliation, not a robust 9-asset covariance dataset." },
+  optimizerReadiness: { ready: true, missing: [], note: "The portfolio service uses the dated monthly-price series, a 36-month covariance window, SLSQP, and the notebook's 2%–40% allocation bounds. Historical performance is evaluated separately." },
   dataQuality: ["Financial statement raw values have workbook cell provenance but no per-cell source URL.", "Beta, Rf and MRP are supplied by the workbook; beta window and rate retrieval dates need source-level reconciliation.", "ESG is recomputed from raw GOC_ESG indicators; scores are relative to the current 9-company peer set.", "2024 inputs predict 2025; realized price return is a historical outcome, not a forward expectation."],
   records: records.sort((a, b) => a.dataYear - b.dataYear || a.ticker.localeCompare(b.ticker)),
 };

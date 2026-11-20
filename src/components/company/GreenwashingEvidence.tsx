@@ -15,13 +15,11 @@ function contradictionZone(score: number) {
 export function GreenwashingEvidence({ evidence }: { evidence: EsgEvidence[] }) {
   if (evidence.length === 0) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-dashed bg-muted/30 p-4 text-xs">
+        <div className="flex items-center gap-3 rounded-xl border bg-muted/20 p-4 text-xs">
         <ShieldCheck className="size-5 shrink-0 text-muted-foreground" />
         <div>
-          <p className="font-medium">Chưa có cặp bằng chứng đối chiếu</p>
-          <p className="text-muted-foreground">
-            Chưa ghi nhận mâu thuẫn giữa tuyên bố của doanh nghiệp và dữ liệu ngoại cảnh hiện có.
-          </p>
+          <p className="font-medium">Chưa đủ nguồn đối chiếu</p>
+          <p className="text-muted-foreground">Chỉ hiển thị đánh giá khi có tuyên bố và nguồn độc lập để so sánh.</p>
         </div>
       </div>
     );
@@ -31,7 +29,7 @@ export function GreenwashingEvidence({ evidence }: { evidence: EsgEvidence[] }) 
     <div className="space-y-3">
       <div className="hidden grid-cols-[1fr_auto_1fr] gap-3 px-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase md:grid">
         <span>Doanh nghiệp tuyên bố</span>
-        <span className="w-24 text-center">Mâu thuẫn (NLP)</span>
+        <span className="w-24 text-center">Mức đối chiếu</span>
         <span>Dữ liệu ngoại cảnh</span>
       </div>
       {evidence.map((e, i) => {

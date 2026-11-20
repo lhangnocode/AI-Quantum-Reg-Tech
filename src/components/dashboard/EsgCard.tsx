@@ -7,6 +7,7 @@ import type { CompanyOverview } from "@/lib/overview";
 
 export function EsgCard({ items }: { items: CompanyOverview[] }) {
   const highRisk = items.filter((i) => i.esg.greenwashingRisk === "high").map((i) => i.company.ticker);
+  const hasUnassessedRisk = items.some((i) => i.esg.greenwashingRisk === "TODO");
 
   return (
     <DashboardCard
@@ -16,6 +17,10 @@ export function EsgCard({ items }: { items: CompanyOverview[] }) {
         highRisk.length > 0 ? (
           <Badge variant="secondary" className="h-auto bg-risk-distress/10 px-2 py-0.5 text-[10px] font-semibold text-risk-distress">
             <AlertTriangle /> Tẩy xanh cao: {highRisk.join(", ")}
+          </Badge>
+        ) : hasUnassessedRisk ? (
+          <Badge variant="secondary" className="h-auto px-2 py-0.5 text-[10px] font-semibold">
+            <Leaf /> Rủi ro tẩy xanh: chưa đánh giá
           </Badge>
         ) : (
           <Badge variant="secondary" className="h-auto bg-risk-safe/10 px-2 py-0.5 text-[10px] font-semibold text-risk-safe">

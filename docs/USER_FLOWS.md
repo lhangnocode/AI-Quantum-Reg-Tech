@@ -14,7 +14,7 @@ Quản lý quỹ/chuyên viên đầu tư cần tra cứu doanh nghiệp F&B, xe
 flowchart TD
   A[Dashboard] --> B[Danh sách cổ phiếu /stocks]
   B -->|Mở hồ sơ| C[Hồ sơ doanh nghiệp /company/ticker]
-  C -->|Run OSINT scan| D[Candidate + nguồn + trạng thái review]
+  C -->|Chọn khung và quét OSINT| D[Candidate + nguồn + trạng thái review]
   D -->|Rà soát trong phiên| C
   B -->|Chọn mã| E[Portfolio /portfolio]
   E --> F[Thử tham số và xem scenario]
@@ -35,35 +35,35 @@ Luồng PDF hiện là nhánh thẩm định riêng. Kết quả PDF **chưa đ�
 
 1. Xem số mã có dữ liệu trong universe hiện hành.
 2. Tìm mã theo ticker, tên, ngành hoặc sàn.
-3. Bấm `Nạp bộ demo 4 mã` để chọn VNM, SAB, MCM, SBT; hoặc chọn/bỏ chọn các mã đang có trong danh sách.
+3. Chọn/bỏ chọn các mã analysis-ready trong universe 9 mã hiện có.
 4. Bấm ticker để mở hồ sơ doanh nghiệp hoặc `Mở danh mục` để mang selection sang Portfolio.
 
 **Kết quả nhìn thấy:** danh sách mã và các trường Ri, ESGi, Altman Z/zone, RFin total, số tín hiệu OSINT. Mỗi mã đi tới hồ sơ riêng để xem công thức, dữ liệu chi tiết và nguồn.
 
-**Cần nói rõ khi demo:** bốn mã là preset, không phải giới hạn kiến trúc. Workbook hiện chỉ chứa bốn hồ sơ đầy đủ; mã được nhắc trong workbook khác chưa tự động xuất hiện.
+**Cần nói rõ khi demo:** workbook hiện có dữ liệu phân tích cho 9 mã. Mã mới đăng ký chỉ thành analysis-ready sau khi nhập dữ liệu có nguồn và kiểm tra.
 
 ### Bước 2 — Xem hồ sơ và rà soát OSINT
 
 **Route:** `/company/MCM` (hoặc ticker người demo chọn).
 
 1. Chỉ ra Altman Z/zone, ESGi, các ô đang thiếu, timeline OSINT và công thức `RFin base + POSINT = RFin total`.
-2. Bấm `Run OSINT scan`.
-3. Backend chạy 1 job Firecrawl Agent cho mã đó với prompt một câu theo năm dữ liệu ("… trong năm 2024"). Sự kiện đã duyệt trong workbook năm đó hiện ở mục riêng và đã được tính.
+2. Chọn khung 6/12/24/36/60 tháng rồi bấm `Quét sự kiện`.
+3. Backend chạy 1 job Firecrawl Agent cho mã đó trong khoảng ngày đã chọn đến hôm nay. Sự kiện đã duyệt trong workbook hiện ở mục riêng; sự kiện mới cần reviewer chấp nhận.
 4. Người dùng mở nguồn của từng sự kiện mới, bấm "Chấp nhận mức 1/2/3" hoặc "Bỏ". P_OSINT = mức cao nhất theo bảng Params (không cộng dồn); R_fin,total cập nhật trong phiên.
 5. Chưa có audit log bền vững hoặc ghi vào hồ sơ chính thức. Thiếu key/FastAPI → chỉ hiện sự kiện đã duyệt trong workbook.
 
-**Cách diễn giải MCM:** dữ liệu demo có bài báo phản ánh nguy cơ môi trường. Không gọi đây là quyết định xử phạt đã xác nhận. POSINT `+0.10` là giá trị đang được giữ trong workbook theo quyết định nội bộ đã ghi ở `docs/DATA.md`; không tự suy rộng thành quy tắc pháp lý.
+**Cách diễn giải MCM:** workbook giữ bài báo phản ánh nguy cơ môi trường năm 2022 ở mức 1 (`+0.05`), không phải mức 2 (`+0.10`), vì chưa có quyết định xử phạt được xác định. Đây là mức phân loại nội bộ, không phải kết luận pháp lý; xem [ghi chú dữ liệu](DATA.md).
 
 ### Bước 3 — Chọn mã và thử Portfolio
 
 **Route:** `/portfolio`.
 
-1. Quay về `/stocks`, dùng preset demo hoặc chọn các ticker có dữ liệu rồi mở danh mục.
-2. Điều chỉnh α, β, γ, δ và tổng vốn.
-3. So sánh tỷ trọng, lợi nhuận kỳ vọng/thực tế và các ràng buộc đang được cấu hình.
+1. Quay về `/stocks`, chọn các ticker có dữ liệu rồi mở danh mục.
+2. Điều chỉnh mức ưu tiên và tổng vốn.
+3. So sánh tỷ trọng tham chiếu, lợi suất CAPM và lợi suất giá lịch sử.
 4. Nếu chọn mã chưa có scenario hoặc tập mã làm giới hạn min/max bất khả thi, giao diện phải báo rõ.
 
-**Cách diễn giải hiện tại:** slider chọn scenario workbook gần nhất. Bản hiện tại chưa chạy lại optimizer theo từng thay đổi, chưa tính covariance từ chuỗi giá hợp lệ và chưa chạy QAOA. Gọi đây là scenario/classical demo, không gọi là kết quả lượng tử.
+**Cách diễn giải hiện tại:** tỷ trọng được phân bổ theo thứ hạng và mức ưu tiên. Bản hiện tại chưa chạy Markowitz/COBYLA/QUBO/QAOA và chưa tính covariance từ chuỗi giá hợp lệ. Không gọi tỷ trọng là nghiệm solver hoặc kết quả lượng tử.
 
 ### Bước 4 — Nạp hồ sơ PDF nội bộ
 
@@ -91,7 +91,7 @@ Báo cáo hiện là report theo dữ liệu công ty trong workbook. Nó chưa 
 
 | Trạng thái | Ý nghĩa khi trình bày |
 |---|---|
-| `DEMO DATA` | Được lấy từ workbook fixture; không phải kết quả vừa crawl |
+| Workbook event | Sự kiện đã có trong workbook và được duyệt; không phải kết quả vừa crawl |
 | Live candidate / `Needs review` | Tìm được nguồn web; chưa xác nhận nội dung hoặc mức độ vi phạm |
 | `Already in assessment` | Sự kiện đã nằm trong POSINT hiện tại; scan demo không được cộng lần nữa |
 | `TODO` / `—` | Chưa có dữ liệu đầu vào đáng tin cậy |

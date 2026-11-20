@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import date, timedelta
 from functools import partial
 
 from fastapi import APIRouter, HTTPException
@@ -25,8 +25,17 @@ async def create_osint_scan(body: OsintScanRequest) -> dict:
         available |= {ticker.upper() for ticker in load_data_file("financial_engine.json").get("tickers", [])}
     except HTTPException:
         pass
-    if body.year > date.today().year:
-        raise HTTPException(status_code=422, detail="Năm quét không được lớn hơn năm hiện tại.")
+    today = date.today()
+    if body.from_date and body.to_date:
+        from_date, to_date = body.from_date, body.to_date
+    elif body.from_date or body.to_date:
+        raise HTTPException(status_code=422, detail="Cần truyền đủ ngày bắt đầu và ngày kết thúc.")
+    elif body.year:
+        from_date, to_date = date(body.year, 1, 1), min(date(body.year, 12, 31), today)
+    else:
+        to_date, from_date = today, today - timedelta(days=365 * 3)
+    if from_date > to_date or to_date > today:
+        raise HTTPException(status_code=422, detail="Khoảng ngày OSINT không hợp lệ.")
     tickers = list(dict.fromkeys(ticker.strip().upper() for ticker in body.tickers))
     if any(not TICKER_RE.fullmatch(ticker) for ticker in tickers):
         raise HTTPException(status_code=422, detail="Ticker may contain A-Z, 0-9, dot, or hyphen")
@@ -37,7 +46,12 @@ async def create_osint_scan(body: OsintScanRequest) -> dict:
         raise HTTPException(status_code=429, detail="Đang có quá nhiều lượt quét OSINT chạy; thử lại sau.")
     from app.agents.osint_graph import run_osint_graph
 
-    return osint_jobs.start_job(tickers, partial(run_osint_graph, year=body.year), year=body.year)
+    return osint_jobs.start_job(
+        tickers,
+        partial(run_osint_graph, start_date=from_date.isoformat(), end_date=to_date.isoformat()),
+        start_date=from_date.isoformat(),
+        end_date=to_date.isoformat(),
+    )
 
 
 @router.get("/api/v1/osint/scans/{scan_id}")

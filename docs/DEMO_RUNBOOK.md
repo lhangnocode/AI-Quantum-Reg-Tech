@@ -21,18 +21,18 @@ Lệnh trên chạy FastAPI ở cổng 8000. Nếu chưa cài dependency, tạo 
 
 ### Chọn chế độ OSINT
 
-- Chỉ dùng Firecrawl Agent API: mỗi lượt quét = 1 job cho 1 mã, 1 năm dữ liệu t, prompt "Tìm các sự kiện doanh nghiệp {tên} (mã {mã}) bị cơ quan nhà nước xử phạt, truy thu hoặc kết luận vi phạm trong năm {t}". **Thường mất vài phút** – giao diện hiện số giây đã chờ.
-- Chạy ở `/portfolio` → "Kiểm tra OSINT năm t" (hoặc ở `/company/[mã]` cho năm mới nhất). Sự kiện đã duyệt trong workbook hiện ở mục riêng và đã được tính; sự kiện mới phải mở nguồn rồi bấm "Chấp nhận mức 1/2/3" hoặc "Bỏ".
+- Chỉ dùng Firecrawl Agent API: mỗi lượt quét = 1 job cho 1 mã, với khung chọn 6/12/24/36/60 tháng đến hôm nay. **Thường mất vài phút** – giao diện hiện số giây đã chờ.
+- Chạy ở `/portfolio` hoặc `/company/[mã]` → **Theo dõi sự kiện xử phạt**. Sự kiện đã duyệt trong workbook hiện ở mục riêng và đã được tính; sự kiện mới phải mở nguồn rồi bấm "Chấp nhận mức 1/2/3" hoặc "Bỏ".
 - Cần `FIRECRAWL_API_KEY` trong `backend/.env`; thiếu key hoặc FastAPI không chạy → chỉ hiện sự kiện đã duyệt trong workbook kèm cảnh báo.
 - Chi phí: tới `OSINT_AGENT_MAX_CREDITS` (mặc định 500) mỗi mã mỗi lượt. Kiểm tra credit trước buổi demo; nên chạy sẵn một lượt trước giờ trình bày.
 - `OSINT_VERIFY_SOURCES=false` (mặc định): không đọc lại trang nguồn, không gọi LLM. Bật `true` để kiểm quote bằng Firecrawl scrape (1 credit/trang) và cho Groq/Gemini gợi ý mức. Jina giữ trong code nhưng tắt.
 
 ## Kiểm chứng AI Agent trong demo
 
-1. Mở `/company/VNM` và bấm **Run OSINT scan**. Một lượt live thành công phải hiện `mode=live`, nguồn `firecrawl-agent` + `firecrawl-scrape` (chế độ search: `firecrawl`, 4 truy vấn/mã), số credit agent và số quote agent có trong trang nguồn, LLM `live` cùng tên model, và đủ 5 bước `discover → graph_enrichment → extract → classify → validate`.
+1. Mở `/company/VNM`, chọn khoảng 6/12/24/36/60 tháng rồi bấm **Quét sự kiện**. Một lượt live trả candidate, nguồn và metadata provider; chỉ kết quả có thể đối chiếu mới nên được reviewer chấp nhận.
 2. Đọc dòng chẩn đoán ngay dưới nút: số kết quả, số đề xuất LLM và số quote khớp chính xác với excerpt. Mở nguồn từng kết quả để tự đối chiếu. Số đề xuất lớn hơn 0 chứng minh model đã trả structured output; quote khớp bằng 0 vẫn là kết quả hợp lệ nhưng không có căn cứ để preview penalty.
 3. Neo4j `đã kết nối, chưa có node công ty` chứng minh kết nối sống nhưng graph chưa có dữ liệu; `chưa kết nối` là cấu hình/kết nối cần xử lý. Không cần ghi dữ liệu demo vào graph để chạy luồng OSINT.
-4. Nếu có kết quả workbook, UI ghi rõ `DEMO DATA` và AI bị skip. Nếu tìm kiếm sống không có bài, đây không phải lỗi LLM: không có nguồn để phân loại.
+4. Khi backend/provider không khả dụng, UI hiển thị cảnh báo và các sự kiện đã duyệt có trong workbook. Nếu tìm kiếm sống không có bài, không có nguồn để phân loại.
 5. Mở Developer Tools → Network, chọn request `POST /api/osint/scan` (HTTP `202` kèm `scan_id`) và các request `GET /api/osint/scan/<id>` (trạng thái `running` → `completed`) để kiểm tra workflow, metadata provider/AI và findings. Không chụp/paste request environment hoặc API key vào log demo.
 
 Luồng Firecrawl-only mới chỉ được kiểm bằng test backend với provider giả lập (`backend/tests/test_osint_graph.py`); chưa có lượt kiểm chứng với key thật. Kết quả tìm kiếm và nội dung LLM thay đổi theo thời điểm.
@@ -44,7 +44,7 @@ Luồng Firecrawl-only mới chỉ được kiểm bằng test backend với pro
 3. Trong Processing theo dõi `Đọc tài liệu/OCR → Chuẩn hoá → LLM Agent → Z'-Score`. Kết quả phải ghi provider/model, workflow `llm_extract → validate_evidence`, số proposal và số quote đã khớp.
 4. Bảng đánh dấu phương pháp theo từng field (`LLM`/`Rules`), trang và quote. Nếu model không trả evidence khớp, field giữ giá trị của parser hoặc để trống; không lấy proposal chưa kiểm chứng để tính Z'. Nếu hai phương pháp lệch nhau, so sánh dòng gốc trước khi trình bày.
 5. PDF scan `tests/fixtures/bctc-mau-qrt-2024-scan.pdf` minh hoạ OCR. Không gửi tài liệu thật/mật tới provider nếu chưa được phép.
-- Khi không có kết quả live, app dùng sự kiện workbook và gắn nhãn `DEMO DATA`.
+- Khi không có kết quả live, app chỉ hiển thị sự kiện workbook đã duyệt và nêu cảnh báo kết nối.
 - Hồ sơ OSINT hiển thị các bước agent và trạng thái Neo4j. Hiện Aura đã kết nối nhưng graph rỗng; muốn nạp dữ liệu workbook demo thì chạy lệnh seed có cờ ghi chủ động trong [backend README](../backend/README.md).
 - Cấu hình MCP cho IDE nằm trong `.vscode/mcp.json`. Bật Tool authentication trong Aura Console, mở VS Code và hoàn tất OAuth trong browser. Chỉ đọc graph khi demo.
 - Mẫu: `.env.example` (frontend → `.env.local`) và `backend/.env.example` (FastAPI → `backend/.env`). Chỉ thêm các dòng còn thiếu, không ghi đè key hiện có; sửa xong thì khởi động lại `npm run dev` hoặc uvicorn tương ứng.
@@ -64,26 +64,26 @@ Luồng Firecrawl-only mới chỉ được kiểm bằng test backend với pro
 
 > “Đây là prototype trên bộ dữ liệu workbook của nhóm. Tôi sẽ đi từ universe cổ phiếu đến hồ sơ rủi ro, thử phân bổ, rồi minh họa OCR trên một BCTC giả định.”
 
-Mở `/stocks`, nêu universe hiện tại có bốn hồ sơ đầy đủ. Bấm `Nạp bộ demo 4 mã` để tái lập cùng một bộ mã.
+Mở `/stocks`, nêu universe hiện tại có 9 mã analysis-ready: VNM, MCH, MCM, SBT, QNS, KDC, PAN, IDP, SAB. Mã mới đăng ký sẽ ở trạng thái chờ dữ liệu cho tới khi có đầu vào nguồn được kiểm tra.
 
 ### 0:40–1:50 — Danh sách và hồ sơ doanh nghiệp
 
-1. Tìm VNM hoặc MCM trong `/stocks`.
+1. Tìm VNM, PAN hoặc MCM trong `/stocks`.
 2. Mở hồ sơ và chỉ vào Altman, ESG, OSINT, RFin base/POSINT/RFin total.
 3. Nhấn mạnh ô `—` là dữ liệu chưa có, không phải điểm 0.
 
 ### 1:50–2:50 — OSINT
 
-1. Ở hồ sơ doanh nghiệp bấm `Run OSINT scan`.
+1. Ở hồ sơ doanh nghiệp chọn khung thời gian rồi bấm `Quét sự kiện`.
 2. Chế độ demo: nêu rõ sự kiện xuất phát từ workbook và có thể đã nằm trong assessment; hệ thống không cộng penalty lần hai.
 3. Chế độ live: xem nguồn Firecrawl và nhóm truy vấn của từng kết quả, mở URL, đọc trích đoạn và đề xuất AI; bài viết chưa chứng minh vi phạm, cần reviewer.
 4. AI chỉ phân loại excerpt và không ghi POSINT. Chưa có persistence/audit trail.
 
 ### 2:50–4:00 — Portfolio
 
-1. Từ `/stocks`, chọn bộ demo và mở `/portfolio`.
-2. Di chuyển một slider α/β/γ/δ, chỉ vào tên scenario/giới hạn weights và vốn.
-3. Nêu rõ slider đang chọn scenario workbook gần nhất; đây chưa phải lần chạy solver mới, chưa có covariance thực và chưa chạy quantum hardware.
+1. Từ `/stocks`, chọn các mã analysis-ready và mở `/portfolio`.
+2. Chọn vốn và mức ưu tiên, rồi quan sát tỷ trọng tham chiếu.
+3. Nêu rõ đây là phân bổ theo thứ hạng và mức ưu tiên; chưa có covariance thực và chưa chạy QUBO/QAOA.
 
 ### 4:00–5:20 — PDF nội bộ
 
@@ -105,23 +105,23 @@ Không. Bảng hiện tại lấy từ workbook demo (BCTC 2024, price inputs th
 Không. Firecrawl search trả candidate và nguồn để reviewer đánh giá. Bài báo không đồng nghĩa quyết định xử phạt.
 
 **“Thay đổi tham số có chạy optimizer mới không?”**
-Hiện slider chọn scenario có sẵn. Solver/covariance đầy đủ là phần cần triển khai tiếp.
+Slider hiện phân bổ theo mức ưu tiên và dữ liệu năm; đây chưa phải solver Markowitz/QUBO/QAOA và chưa có covariance.
 
 **“PDF có được AI đọc không?”**
 OCR/parser chạy trên trình duyệt. Có thể bật LLM extraction riêng bằng checkbox đồng ý gửi text trích xuất; mỗi giá trị AI cần quote/trang nguồn khớp. Chưa có RAG hoặc xử lý chéo nhiều hồ sơ.
 
 **“Có scale thêm cổ phiếu được không?”**
-Thiết kế universe không giới hạn ở bốn mã. Để một mã có phân tích đầy đủ cần nhập dữ liệu có nguồn ở các sheet liên quan và cập nhật portfolio scenario/constraint; mã không đủ dữ liệu sẽ không được giả làm analysis-ready.
+Universe hiện có 9 mã analysis-ready. Có thể đăng ký thêm mã, nhưng cần nhập dữ liệu có nguồn ở các sheet liên quan; mã chưa đủ dữ liệu không được giả làm analysis-ready.
 
 ## 4. Nếu gặp sự cố
 
 | Hiện tượng | Cách xử lý demo |
 |---|---|
 | `/api/universe` trả 503 | Khởi động FastAPI ở cổng 8000 trong cùng workspace, kiểm tra `/health` và URL backend trong `.env.local` (Vercel: biến môi trường của project) |
-| Search provider timeout/quota | Nêu rõ nguồn nào lỗi; nếu không còn kết quả live thì app dùng workbook fallback có nhãn `DEMO DATA` |
+| Search provider timeout/quota | Nêu rõ dịch vụ không khả dụng; giao diện chỉ hiện các sự kiện workbook đã duyệt kèm cảnh báo |
 | Document Agent `RateLimitError` | Chờ quota provider hồi phục hoặc đổi `AI_PROVIDER` sang provider khác đã cấu hình; kết quả Rules vẫn hiển thị. Không gửi lại liên tục vì sẽ tăng rate limit |
 | Document Agent báo 413 | Bản hiện tại giới hạn và lọc context trước khi gửi. Nếu provider vẫn từ chối request, dùng PDF ngắn hơn hoặc giảm số trang; parser Rules vẫn là fallback |
 | OCR chưa tải worker | Chờ trang nạp tài nguyên hoặc tải lại; dùng PDF chữ làm đường dự phòng |
 | Kết quả PDF thiếu một số ô | Dùng PDF chữ `tests/fixtures/bctc-mau-qrt-2024.pdf`; chỉ rõ parser giữ thiếu thay vì đoán |
-| Portfolio báo scenario/constraint chưa hỗ trợ | Quay lại preset demo 4 mã; đây là giới hạn dữ liệu/scenario hiện có |
+| Portfolio báo thiếu dữ liệu | Chọn mã có trạng thái analysis-ready; mã pending chưa thể tính chỉ số hoặc phân bổ |
 | Sửa workbook mà app vẫn giữ dữ liệu cũ | Dừng server, chạy `npm run data`, sau đó khởi động lại `npm run dev` |

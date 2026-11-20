@@ -20,6 +20,7 @@ import { formatNumber, formatPct, formatText } from "@/lib/format";
 import { getOverview } from "@/lib/overview";
 import { ALTMAN_FORMULA, GREENWASHING_LABEL, GREENWASHING_ZONE, ZONE_CLASS } from "@/lib/risk";
 import { cn } from "@/lib/utils";
+import { getOsintPeriod } from "@/lib/osint-period";
 
 export async function generateStaticParams() {
   return (await getCompanies()).map((c) => ({ ticker: c.ticker }));
@@ -38,6 +39,7 @@ export default async function CompanyPage(props: PageProps<"/company/[ticker]">)
   const { company, zscore, esg, allEvents, posint, rfinTotal } = overview;
   const gw = esg.greenwashingRisk;
   const hasPillarScores = Object.values(esg.pillars).every((v) => typeof v === "number");
+  const osintPeriod = getOsintPeriod();
 
   return (
     <div className="space-y-5">
@@ -72,16 +74,12 @@ export default async function CompanyPage(props: PageProps<"/company/[ticker]">)
           </p>
           <dl className="flex flex-wrap gap-x-6 gap-y-1 pt-1 text-xs">
             <div>
-              <dt className="text-muted-foreground">Lợi nhuận kỳ vọng (CAPM)</dt>
+              <dt className="text-muted-foreground">Lợi suất kỳ vọng (CAPM)</dt>
               <dd className="font-mono font-semibold tabular">{formatPct(company.expectedReturn)}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">β</dt>
               <dd className="font-mono font-semibold tabular">{formatNumber(company.beta, 3)}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Lợi nhuận thực tế</dt>
-              <dd className="font-mono font-semibold tabular">{formatPct(company.realizedReturn, 2, true)}</dd>
             </div>
           </dl>
         </div>
@@ -101,6 +99,9 @@ export default async function CompanyPage(props: PageProps<"/company/[ticker]">)
           }
         >
           <ZScoreGauge z={zscore.z} model={zscore.model} />
+          <p className="-mt-3 mb-3 text-center text-xs text-muted-foreground">
+            Điểm Altman {zscore.model}: <span className="font-mono font-semibold text-foreground">{formatNumber(zscore.z)}</span>
+          </p>
           <div className="mb-3 -mt-4 flex justify-center">
             <ZoneBadge zone={zscore.zone} className="text-xs" />
           </div>
@@ -143,30 +144,31 @@ export default async function CompanyPage(props: PageProps<"/company/[ticker]">)
       {/* Bằng chứng tẩy xanh */}
       <DashboardCard
         title="Bằng chứng Tẩy xanh (Greenwashing)"
-        description="Đối chiếu tuyên bố của doanh nghiệp với dữ liệu ngoại cảnh – điểm mâu thuẫn do NLP trả về (mock)"
+        description="Đối chiếu tuyên bố của doanh nghiệp với dữ liệu ngoại cảnh theo các bằng chứng hiện có."
       >
         <GreenwashingEvidence evidence={esg.evidence} />
       </DashboardCard>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <DashboardCard title="Dòng thời gian OSINT" description="36 tháng gần nhất · chấm màu theo mức vi phạm" className="xl:col-span-2">
-          <OsintTimeline events={allEvents} endYear={zscore.fiscalYear} />
+          <OsintTimeline events={allEvents} fromDate={osintPeriod.fromDate} toDate={osintPeriod.toDate} />
         </DashboardCard>
 
         <DashboardCard title="Tổng hợp rủi ro tài chính" description="Điểm rủi ro đưa vào mô hình tối ưu danh mục">
           <div className="flex flex-1 flex-col justify-center gap-4">
             <RiskFormula base={zscore.rfinBase} posint={posint} total={rfinTotal} />
             <p className="text-center text-[11px] text-muted-foreground">
-              RFin,Base theo vùng Altman; POSINT = tổng điểm phạt sự kiện OSINT đang hiệu lực.
+              RFin,Base theo vùng Altman; POSINT lấy mức phạt cao nhất trong các sự kiện OSINT đang hiệu lực, không cộng dồn.
             </p>
           </div>
         </DashboardCard>
       </div>
 
-      <DashboardCard title={`Quét OSINT năm ${method.dataYear}`} description="Firecrawl Agent tìm sự kiện xử phạt trong năm dữ liệu; sự kiện mới chỉ được tính khi người dùng chấp nhận và chọn mức.">
+      <DashboardCard title="Theo dõi sự kiện xử phạt" description="Chọn khoảng thời gian cần quét, tính đến hôm nay.">
         <OsintScanner
           ticker={company.ticker}
-          year={method.dataYear}
+          fromDate={osintPeriod.fromDate}
+          toDate={osintPeriod.toDate}
           rfinBase={zscore.rfinBase}
           workbookLevel={overview.events.reduce((max, event) => Math.max(max, event.severity), 0)}
           penaltyTable={method.penaltyTable}

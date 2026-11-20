@@ -27,6 +27,7 @@
 - [UI design reference](UI_DESIGN.md)
 - [Current tech stack inventory](TECH_STACK.md)
 - [Demo status and known limitations](DEMO_STATUS.md)
+- [Bản nháp thay đổi từ Vòng 1 sang bản demo hiện tại](ROUND2_CHANGES.md)
 - [Lộ trình triển khai theo phase](IMPLEMENTATION_ROADMAP.md)
 - [Original build packet (lưu trữ – không còn là nguồn sự thật)](archive/QuantumRegTech_Coding_Agent_Packet.md)
 

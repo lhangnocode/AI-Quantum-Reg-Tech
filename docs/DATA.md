@@ -41,7 +41,11 @@ data/generated/{companies,zscore,esg,osint_events,methodology,esg_indicators,uni
 | R_real | Giá điều chỉnh cuối / đầu năm dự báo − 1 (`GOC_RREAL`) – kết quả lịch sử để đối chiếu, không phải dự báo |
 | ESG | Percentile từng chỉ tiêu trong 9 DN (Num N/A bị loại khỏi xếp hạng, Bool N/A = 0), trụ cột = trung bình, `ESG = 0,4E + 0,35S + 0,25G` |
 
-**Sự kiện OSINT:** sự kiện trong `OSINT_Events` (`Include = 1`) đã được nhóm duyệt → dùng thẳng. Sự kiện mới do Firecrawl Agent tìm (`/portfolio` → Kiểm tra OSINT) chỉ được tính khi người dùng chấp nhận và chọn mức; hiện chỉ áp dụng trong phiên.
+**Sự kiện OSINT:** sự kiện trong `OSINT_Events` (`Include = 1`) đã được nhóm duyệt → dùng thẳng. Sự kiện mới do Firecrawl Agent tìm (`/portfolio` hoặc `/company/[ticker]` → Theo dõi sự kiện xử phạt) chỉ được tính khi người dùng chấp nhận và chọn mức; hiện chỉ áp dụng trong phiên.
+
+**Lưu ý dữ liệu MCM:** workbook giữ bài phản ánh nước thải năm 2022 ở mức 1 (0,05), không phải mức 2 (0,10). Ghi chú nguồn nói chưa có quyết định xử phạt; chỉ tăng lên mức 2 nếu tìm được quyết định. Sự kiện vẫn nằm trong workbook và được tính theo năm quyết định 2022 → dự báo 2023. Vì vậy nó không làm tăng POSINT của năm dữ liệu 2024, và nằm ngoài cửa sổ timeline 36 tháng hiện tại. Không diễn giải việc này là sự kiện đã bị xóa.
+
+**ESGi và tẩy xanh:** ESGi hiện là điểm phân vị công bố 32 chỉ tiêu ESG trong nhóm 9 doanh nghiệp, không phải chỉ số phát hiện tẩy xanh. Workbook chưa có cặp tuyên bố doanh nghiệp ↔ nguồn độc lập đã kiểm chứng; rủi ro tẩy xanh phải hiển thị `TODO`/“chưa đánh giá”. Không gọi giao diện hiện tại là bộ phát hiện NLP/RAG.
 
 ## 3. Sheet của workbook
 
@@ -59,7 +63,7 @@ data/generated/{companies,zscore,esg,osint_events,methodology,esg_indicators,uni
 
 - `"TODO"` = chưa có số liệu (`Todo<T>` trong `src/lib/types.ts`); UI hiện "—". **Không điền số ước lượng.**
 - Tỷ lệ lưu dạng thập phân (0,0835 = 8,35%).
-- `osint_events.json`: `date` = năm quyết định; `active = true` khi sự kiện tính vào năm dữ liệu đang hiển thị.
+- `osint_events.json`: `date` = năm hoặc tháng quyết định; `active = true` khi sự kiện tính vào năm dữ liệu đang hiển thị.
 
 ## 5. Schema JSON (= hợp đồng API)
 
@@ -105,7 +109,7 @@ Kết quả Cổng 2 (`PrivateAnalysis` – `src/lib/types.ts`) = dạng trên +
 ```
 - `source`: `"document"` = số liệu trích từ tệp PDF tải lên (Cổng 2 hiện chỉ nhận PDF; không còn kết quả mẫu).
 - `extraction.fields`: 9 chỉ tiêu `CA` (100) · `TA` (270) · `CL` (310) · `TL` (300) · `EQ` (400) · `RE` (421) · `Revenue` (10) · `PBT` (50) · `Interest` (23); `value = null` nếu không tìm thấy.
-- `deletedAt`: thời điểm xoá tệp gốc (Zero-Retention). Backend Vòng 2 phải trả cùng cấu trúc này.
+- `deletedAt`: thời điểm kết thúc xử lý phía giao diện. Trình duyệt bỏ tham chiếu tệp sau khi xử lý; trường này **không chứng minh** dữ liệu đã bị xoá khỏi bộ nhớ, log, cache hoặc hạ tầng của nhà cung cấp. Không gọi đây là cam kết Zero-Retention toàn hệ thống.
 
 ### Cổng 2 – từ PDF đến Z'
 
@@ -133,7 +137,7 @@ Kết quả Cổng 2 (`PrivateAnalysis` – `src/lib/types.ts`) = dạng trên +
 
 ## 6. Còn thiếu & cần nhóm quyết định
 
-- **Tối ưu danh mục:** chưa có chuỗi giá tháng/ngày → chưa có ma trận hiệp phương sai Σ; hệ số QUBO (q, λ1, λ2, λ3, γ) chưa chốt. Trang `/portfolio` dùng phân bổ theo mức ưu tiên (không phải Markowitz/QAOA).
+- **Tối ưu danh mục:** API `/api/v1/portfolio/optimize` dùng `data/market_prices_monthly.csv` để ước lượng covariance trên cửa sổ 36 tháng và chạy Markowitz + ESG bằng SLSQP, giới hạn 2%–40%. Đây chưa phải QUBO/QAOA; kết quả lịch sử được lưu trong báo cáo đánh giá riêng.
 - **Kịch bản Baseline / ESG-aware** và **mẫu Cổng 2 (TH)** của workbook cũ không còn nguồn → đã bỏ khỏi UI.
 - **Điểm tẩy xanh, Minh bạch, Tuân thủ**: workbook mới không có → `TODO`.
 - Danh sách số liệu cần nhóm tài chính kiểm lại: xem báo cáo rà soát workbook trong lịch sử trao đổi / `docs/DEMO_STATUS.md`.

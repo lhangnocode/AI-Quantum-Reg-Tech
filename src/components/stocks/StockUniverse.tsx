@@ -76,7 +76,7 @@ export function StockUniverse({ items }: { items: CompanyOverview[] }) {
           <h2 className="text-lg font-semibold">Danh sách cổ phiếu</h2>
           <p className="text-sm text-muted-foreground">Tìm trong danh sách đã cấu hình, mở hồ sơ doanh nghiệp hoặc chọn mã cho danh mục.</p>
         </div>
-          <Badge variant="outline">{items.length} mã có dữ liệu năm 2024 · {pendingTickers.length} mã chờ dữ liệu</Badge>
+          <Badge variant="outline">{items.length} mã có dữ liệu · {pendingTickers.length} mã chờ dữ liệu</Badge>
       </header>
 
       <DashboardCard title="Thêm mã cổ phiếu" description="Đăng ký mã ngoài bộ dữ liệu hiện có. Cần nguồn tham chiếu; mã mới sẽ ở trạng thái chờ cho tới khi bổ sung và kiểm tra dữ liệu tài chính, thị trường và ESG.">
@@ -100,7 +100,7 @@ export function StockUniverse({ items }: { items: CompanyOverview[] }) {
               <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
               <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm mã, tên doanh nghiệp, ngành hoặc sàn" className="pl-9" aria-label="Tìm trong danh sách cổ phiếu" />
             </div>
-            <Button size="sm" variant="secondary" onClick={() => updateSelection(portfolioTickers)}>Chọn cả 9 mã</Button>
+              <Button size="sm" variant="secondary" onClick={() => updateSelection(portfolioTickers)}>Chọn cả {portfolioTickers.length} mã</Button>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2">
@@ -117,7 +117,7 @@ export function StockUniverse({ items }: { items: CompanyOverview[] }) {
               <tbody>{filtered.map((item) => {
                 const { company, zscore, esg, events, rfinTotal } = item;
                 const checked = selected.includes(company.ticker);
-                const detailHref = `/financial-engine#${company.ticker}`;
+                const detailHref = `/company/${company.ticker}`;
                 const zoneLabel: Record<string, string> = { safe: "An toàn", grey: "Vùng xám", distress: "Nguy cơ" };
                 return <tr key={company.ticker} className={`border-b last:border-0 ${checked ? "bg-primary/[0.035]" : ""}`}>
                   <td className="p-2"><button type="button" role="checkbox" aria-checked={checked} aria-label={`Chọn ${company.ticker}`} onClick={() => toggle(company.ticker)} className={`flex size-5 items-center justify-center rounded border ${checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"}`}>{checked && <Check className="size-3.5" />}</button></td>
@@ -133,7 +133,7 @@ export function StockUniverse({ items }: { items: CompanyOverview[] }) {
         </div>
       </DashboardCard>
 
-      <p className="text-xs text-muted-foreground">Tỷ trọng được hệ thống tính lại theo các mã và mức ưu tiên anh chọn ở trang danh mục.</p>
+      <p className="text-xs text-muted-foreground">Xem tỷ trọng đề xuất cho các mã đã chọn tại trang Danh mục.</p>
     </div>
   );
 }

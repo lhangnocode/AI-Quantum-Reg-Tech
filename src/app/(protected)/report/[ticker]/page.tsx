@@ -136,7 +136,7 @@ export default async function ReportPage(props: PageProps<"/report/[ticker]">) {
               ))}
             </ul>
           ) : (
-            <p className="text-muted-foreground">Chưa có cặp bằng chứng đối chiếu.</p>
+            <p className="text-muted-foreground">Chưa đủ nguồn để đối chiếu.</p>
           )}
         </ReportSection>
 
@@ -161,17 +161,20 @@ export default async function ReportPage(props: PageProps<"/report/[ticker]">) {
 
         <ReportSection n={6} title="Khuyến nghị tỷ trọng">
           <p>
-            Không có tỷ trọng cố định cho {company.ticker}: tỷ trọng phụ thuộc các mã nhà đầu tư chọn và mức ưu tiên ở trang{" "}
-            <Link href="/portfolio" className="underline">Tạo danh mục</Link> (dữ liệu năm {method.dataYear}, so với lợi suất thực tế năm {method.forecastYear}).
+            Tỷ trọng danh mục được tính từ dữ liệu tài chính, mức rủi ro và mục tiêu đầu tư. Mở{" "}
+            <Link href="/portfolio" className="underline">Danh mục</Link> để chọn các mã và xem phân bổ đề xuất.
           </p>
         </ReportSection>
 
         <ReportSection n={7} title="Phương pháp & nguồn dữ liệu">
           <ul className="list-disc space-y-0.5 pl-5">
             <li>
-              Rf = {formatPct(method.riskFree.value)} ({method.riskFree.source}); ERP = {formatPct(method.equityRiskPremium.value)} (
-              {method.equityRiskPremium.source}); <span className="font-mono">{method.capm}</span>.
+              Rf = {formatPct(method.riskFree.value)}; MRP = {formatPct(method.equityRiskPremium.value)};{" "}
+              <span className="font-mono">{method.capm}</span>.
             </li>
+            <li>Nguồn Rf/MRP: {method.riskFree.source === method.equityRiskPremium.source
+              ? method.riskFree.source
+              : `Rf: ${method.riskFree.source}; MRP: ${method.equityRiskPremium.source}`}.</li>
             <li>
               <span className="font-mono">{method.altman}</span> – {method.altmanZones}.
             </li>

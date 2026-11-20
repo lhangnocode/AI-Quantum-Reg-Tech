@@ -13,6 +13,8 @@ fallback reader in that step.
 from __future__ import annotations
 
 import asyncio
+import calendar
+from datetime import date
 import ipaddress
 import json
 import os
@@ -55,6 +57,8 @@ class ProposalBatch(BaseModel):
 class OsintState(TypedDict, total=False):
     tickers: list[str]
     year: int
+    start_date: str
+    end_date: str
     findings: list[dict]
     providers: list[str]
     warnings: list[str]
@@ -159,9 +163,35 @@ AGENT_SCHEMA = {
 }
 
 
-def agent_prompt(ticker: str, name: str, year: int) -> str:
+def agent_prompt(ticker: str, name: str, start_date: str | int, end_date: str | None = None) -> str:
     """The whole instruction is one sentence; the output format comes from AGENT_SCHEMA."""
-    return f"Tìm các sự kiện doanh nghiệp {name} (mã {ticker}) bị cơ quan nhà nước xử phạt, truy thu hoặc kết luận vi phạm trong năm {year}"
+    if isinstance(start_date, int) and end_date is None:
+        return f"Tìm các sự kiện doanh nghiệp {name} (mã {ticker}) bị cơ quan nhà nước xử phạt, truy thu hoặc kết luận vi phạm trong năm {start_date}"
+    return f"Tìm các sự kiện doanh nghiệp {name} (mã {ticker}) bị cơ quan nhà nước xử phạt, truy thu hoặc kết luận vi phạm từ ngày {start_date} đến ngày {end_date}"
+
+
+def _reviewed_event_range(event: dict) -> tuple[date, date] | None:
+    note = str(event.get("dateNote") or "")
+    exact = re.search(r"(\d{2})/(\d{2})/(\d{4})", note)
+    if exact:
+        try:
+            exact_date = date(int(exact.group(3)), int(exact.group(2)), int(exact.group(1)))
+            return exact_date, exact_date
+        except ValueError:
+            pass
+    month = re.search(r"(\d{4})-(\d{2})", str(event.get("date") or ""))
+    if month:
+        year, month_number = int(month.group(1)), int(month.group(2))
+        return date(year, month_number, 1), date(year, month_number, calendar.monthrange(year, month_number)[1])
+    year = event.get("decisionYear")
+    return (date(int(year), 1, 1), date(int(year), 12, 31)) if year else None
+
+
+def _event_in_period(event: dict, start_date: date, end_date: date) -> bool:
+    event_range = _reviewed_event_range(event)
+    if event_range is None:
+        return False
+    return event_range[0] <= end_date and event_range[1] >= start_date
 
 
 def company_names() -> dict[str, str]:
@@ -189,7 +219,7 @@ def _canonical(url: str) -> str:
     return f"{(parsed.hostname or '').lower().removeprefix('www.')}{parsed.path.rstrip('/')}"
 
 
-async def _firecrawl_agent(client: httpx.AsyncClient, key: str, ticker: str, name: str, year: int) -> tuple[list[dict], dict]:
+async def _firecrawl_agent(client: httpx.AsyncClient, key: str, ticker: str, name: str, start_date: str | int, end_date: str | None = None) -> tuple[list[dict], dict]:
     """Start one Firecrawl Agent job and poll it until completed/failed or the local timeout."""
     max_credits = _int_env("OSINT_AGENT_MAX_CREDITS", 500, 50, 2500)
     timeout_s = _int_env("OSINT_AGENT_TIMEOUT_SECONDS", 300, 30, 900)
@@ -197,7 +227,7 @@ async def _firecrawl_agent(client: httpx.AsyncClient, key: str, ticker: str, nam
     headers = {"Authorization": f"Bearer {key}"}
     try:
         response = await client.post(f"{FIRECRAWL_API}/agent", headers=headers, json={
-            "prompt": agent_prompt(ticker, name, year),
+            "prompt": agent_prompt(ticker, name, start_date, end_date),
             "schema": AGENT_SCHEMA,
             "maxCredits": max_credits,
             "location": {"country": "VN"},
@@ -288,21 +318,28 @@ def _workbook_finding(event: dict) -> dict:
 async def discover(state: OsintState) -> dict:
     names = company_names()
     tickers = state["tickers"]
-    year = state["year"]
+    year = state.get("year")
+    today = date.today()
+    start_date = date.fromisoformat(state["start_date"]) if state.get("start_date") else date(year, 1, 1) if year else today.replace(year=today.year - 3)
+    end_date = date.fromisoformat(state["end_date"]) if state.get("end_date") else date(year, 12, 31) if year else today
+    date_from = start_date.isoformat()
+    date_to = end_date.isoformat()
+    prompt_start: str | int = year if year is not None and not state.get("start_date") else date_from
+    prompt_end = None if isinstance(prompt_start, int) else date_to
     key = os.getenv("FIRECRAWL_API_KEY", "")
     warnings: list[str] = []
     findings: list[dict] = []
     search = {
-        "provider": "firecrawl-agent", "mode": "agent", "year": year, "runs": [], "credits_used": 0,
+        "provider": "firecrawl-agent", "mode": "agent", "year": year, "from_date": date_from, "to_date": date_to, "runs": [], "credits_used": 0,
         "max_credits_per_ticker": _int_env("OSINT_AGENT_MAX_CREDITS", 500, 50, 2500),
-        "prompts": {ticker: agent_prompt(ticker, names.get(ticker, ticker), year) for ticker in tickers},
+        "prompts": {ticker: agent_prompt(ticker, names.get(ticker, ticker), prompt_start, prompt_end) for ticker in tickers},
     }
-    reviewed = [event for event in reviewed_events(tickers) if event.get("decisionYear") == year]
+    reviewed = [event for event in reviewed_events(tickers) if _event_in_period(event, start_date, end_date)]
     reviewed_urls = {(event["ticker"], _canonical(str(event.get("sourceUrl") or ""))) for event in reviewed}
 
     if key:
         async with httpx.AsyncClient(timeout=httpx.Timeout(30, connect=5), follow_redirects=False) as client:
-            results = await asyncio.gather(*(_firecrawl_agent(client, key, ticker, names.get(ticker, ticker), year) for ticker in tickers))
+            results = await asyncio.gather(*(_firecrawl_agent(client, key, ticker, names.get(ticker, ticker), prompt_start, prompt_end) for ticker in tickers))
         for items, run in results:
             findings.extend(items)
             if warning := run.pop("warning", None):
@@ -325,7 +362,7 @@ async def discover(state: OsintState) -> dict:
     agent_ran = any(run.get("status") in {"completed", "partial"} for run in search["runs"])
     if unique or agent_ran:
         if agent_ran and not unique:
-            warnings.append(f"Firecrawl Agent không tìm thấy sự kiện xử phạt có nguồn trong năm {year}.")
+            warnings.append(f"Firecrawl Agent không tìm thấy sự kiện xử phạt có nguồn trong khoảng {date_from} – {date_to}.")
         # Workbook events stay visible next to live results; they are never sent to the LLM.
         return {"findings": list(unique.values()) + workbook, "providers": ["firecrawl-agent"], "warnings": warnings, "mode": "live", "search": search}
     if key:
@@ -506,14 +543,23 @@ _graph.add_edge("validate", END)
 OSINT_GRAPH = _graph.compile()
 
 
-async def run_osint_graph(tickers: list[str], year: int) -> dict:
+async def run_osint_graph(tickers: list[str], year: int | None = None, start_date: str | None = None, end_date: str | None = None) -> dict:
     started = time.perf_counter()
-    result = await OSINT_GRAPH.ainvoke({"tickers": tickers, "year": year}, config={"recursion_limit": 6})
+    state = {"tickers": tickers}
+    if year is not None:
+        state["year"] = year
+    if start_date is not None:
+        state["start_date"] = start_date
+    if end_date is not None:
+        state["end_date"] = end_date
+    result = await OSINT_GRAPH.ainvoke(state, config={"recursion_limit": 6})
     ai = result.get("ai", {})
     return {
         "mode": result.get("mode", "live"),
         "discovery": "agent",
         "year": year,
+        "from_date": result.get("search", {}).get("from_date"),
+        "to_date": result.get("search", {}).get("to_date"),
         "providers": list(dict.fromkeys(result.get("providers", []))),
         "warnings": result.get("warnings", []),
         "workflow": WORKFLOW,

@@ -26,6 +26,10 @@ const EXCHANGE = { VNM: "HOSE", SAB: "HOSE", MCM: "HOSE", SBT: "HOSE", MCH: "HOS
 const ZONE = { SAFE: "safe", GREY: "grey", DISTRESS: "distress" };
 const OSINT_TYPE = [[/thuế/i, "tax"], [/môi trường/i, "environment"], [/chứng khoán|công bố thông tin/i, "securities"], [/báo chí/i, "media"]];
 const vi = (n) => String(n).replace(".", ",");
+const eventDate = (event) => {
+  const exactDate = /(?:^|\D)(\d{2})\/(\d{2})\/(\d{4})(?:\D|$)/.exec(event.dateNote ?? "");
+  return exactDate ? `${exactDate[3]}-${exactDate[2]}` : String(event.decisionYear);
+};
 
 const companies = records.map((r) => ({
   ticker: r.ticker,
@@ -60,7 +64,7 @@ const esg = Object.fromEntries(records.map((r) => [r.ticker, {
 const osint = engine.osintEvents.map((e, i) => ({
   id: `wb-${e.ticker}-${e.decisionYear}-${i + 1}`,
   ticker: e.ticker,
-  date: String(e.decisionYear),
+  date: eventDate(e),
   dateNote: e.dateNote ?? null,
   decisionYear: e.decisionYear,
   forecastYear: e.forecastYear,

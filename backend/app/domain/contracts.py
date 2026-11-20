@@ -40,8 +40,18 @@ class RegisterCompany(BaseModel):
 
 class OsintScanRequest(BaseModel):
     tickers: list[str] = Field(min_length=1, max_length=4)
-    # Data year t: the agent looks for events decided in t (they feed the forecast for t+1).
-    year: int = Field(ge=2000, le=2100)
+    # Date range is used for current monitoring; year remains for older API callers.
+    from_date: date | None = None
+    to_date: date | None = None
+    year: int | None = Field(default=None, ge=2000, le=2100)
+
+
+class PortfolioOptimizeRequest(BaseModel):
+    data_year: int = Field(ge=2021, le=2024)
+    tickers: list[str] = Field(min_length=3, max_length=9)
+    gamma: float = Field(ge=0, le=0.3)
+    delta: float = Field(ge=0, le=0.3)
+    accepted_osint_levels: dict[str, int] = Field(default_factory=dict)
 
 
 class DocumentLine(BaseModel):

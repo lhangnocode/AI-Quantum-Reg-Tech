@@ -42,9 +42,11 @@ function EventDot({ event }: { event: OsintEvent }) {
   );
 }
 
-/** Timeline OSINT 36 tháng (3 năm × 12 tháng), chấm màu theo mức 1/2/3. */
-export function OsintTimeline({ events, endYear }: { events: OsintEvent[]; endYear: number }) {
-  const years = [endYear - 2, endYear - 1, endYear];
+/** Timeline OSINT theo khoảng ngày đang theo dõi, chấm màu theo mức 1/2/3. */
+export function OsintTimeline({ events, fromDate, toDate }: { events: OsintEvent[]; fromDate: string; toDate: string }) {
+  const firstYear = Number(fromDate.slice(0, 4));
+  const lastYear = Number(toDate.slice(0, 4));
+  const years = Array.from({ length: lastYear - firstYear + 1 }, (_, index) => firstYear + index);
   const posint = events.filter((e) => e.active).reduce((s, e) => s + e.penalty, 0);
 
   return (

@@ -17,6 +17,7 @@ import type {
   Ticker,
   ZScore,
 } from "./types";
+import { getOsintPeriod, isOsintEventInPeriod } from "./osint-period";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -30,8 +31,15 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function getCompanies(): Promise<Company[]> {
   if (USE_MOCK) { await delay(300); return companies as Company[]; }
-  const page = await getJson<{ companies: Company[] }>("/api/v1/companies?limit=200");
-  return page.companies;
+  const local = companies as Company[];
+  try {
+    const page = await getJson<{ companies?: Company[] }>("/api/v1/companies?limit=200");
+    const merged = new Map(local.map((company) => [company.ticker, company]));
+    for (const company of page.companies ?? []) merged.set(company.ticker, { ...merged.get(company.ticker), ...company });
+    return [...merged.values()].sort((a, b) => a.ticker.localeCompare(b.ticker));
+  } catch {
+    return local;
+  }
 }
 
 export async function getCompany(ticker: Ticker): Promise<Company | undefined> {
@@ -41,32 +49,66 @@ export async function getCompany(ticker: Ticker): Promise<Company | undefined> {
 
 export async function getZScore(ticker: Ticker): Promise<ZScore> {
   if (USE_MOCK) { await delay(200); return (zscore as Record<Ticker, ZScore>)[ticker]; }
-  return getJson(`/api/v1/companies/${ticker}/zscore`);
+  try { return await getJson(`/api/v1/companies/${ticker}/zscore`); }
+  catch { return (zscore as Record<Ticker, ZScore>)[ticker]; }
 }
 
 export async function getEsg(ticker: Ticker): Promise<Esg> {
   if (USE_MOCK) { await delay(200); return (esg as Record<Ticker, Esg>)[ticker]; }
-  return getJson(`/api/v1/companies/${ticker}/esg`);
+  try { return await getJson(`/api/v1/companies/${ticker}/esg`); }
+  catch { return (esg as Record<Ticker, Esg>)[ticker]; }
 }
 
 export async function getOsintEvents(ticker: Ticker, months = 36): Promise<OsintEvent[]> {
+  const { fromDate, toDate } = getOsintPeriod(new Date(), months);
+  const localEvents = (osintEvents as OsintEvent[]).filter((e) => e.ticker === ticker && isOsintEventInPeriod(e.date, e.decisionYear ?? Number(e.date.slice(0, 4)), fromDate, toDate));
   if (USE_MOCK) {
     await delay(200);
-    return (osintEvents as OsintEvent[]).filter((e) => e.ticker === ticker);
+    return localEvents;
   }
-  return getJson(`/api/v1/companies/${ticker}/osint?months=${months}`);
+  try {
+    const remote = await getJson<OsintEvent[]>(`/api/v1/companies/${ticker}/osint?months=${months}`);
+    const merged = new Map(localEvents.map((event) => [event.id, event]));
+    for (const event of remote) merged.set(event.id, { ...merged.get(event.id), ...event });
+    return [...merged.values()];
+  } catch { return localEvents; }
 }
 
 /** 32 chỉ tiêu ESG công bố (năm 2024) của các DN – nền cho mức độ công bố theo trụ cột E / S / G. */
 export async function getEsgIndicators(): Promise<EsgIndicatorSet> {
   if (USE_MOCK) { await delay(150); return esgIndicators as EsgIndicatorSet; }
-  return getJson("/api/v1/esg/indicators");
+  const local = esgIndicators as EsgIndicatorSet;
+  try {
+    const remote = await getJson<EsgIndicatorSet>("/api/v1/esg/indicators");
+    const localByCode = new Map(local.indicators.map((indicator) => [indicator.code, indicator]));
+    const remoteByCode = new Map(remote.indicators.map((indicator) => [indicator.code, indicator]));
+    const indicators = [...new Set([...localByCode.keys(), ...remoteByCode.keys()])].map((code) => {
+      const localIndicator = localByCode.get(code);
+      const remoteIndicator = remoteByCode.get(code);
+      return {
+        ...localIndicator,
+        ...remoteIndicator,
+        values: { ...(localIndicator?.values ?? {}), ...(remoteIndicator?.values ?? {}) },
+      } as EsgIndicatorSet["indicators"][number];
+    });
+    return { ...local, ...remote, indicators, values: { ...local.values, ...remote.values } };
+  } catch {
+    return local;
+  }
 }
 
 /** Tham số chung & phương pháp (Rf, ERP, CAPM, Altman, POSINT). */
 export async function getMethodology(): Promise<Methodology> {
   if (USE_MOCK) return methodology as Methodology;
-  return getJson("/api/v1/methodology");
+  const local = methodology as Methodology;
+  const remote = await getJson<Partial<Methodology>>("/api/v1/methodology");
+  return {
+    ...local,
+    ...remote,
+    dataYear: remote.dataYear ?? local.dataYear,
+    forecastYear: remote.forecastYear ?? local.forecastYear,
+    penaltyTable: remote.penaltyTable ?? local.penaltyTable,
+  };
 }
 
 export const PRIVATE_STAGES: { id: PrivateStage; label: string }[] = [

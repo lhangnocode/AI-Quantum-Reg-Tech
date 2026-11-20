@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import date, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
@@ -128,5 +129,21 @@ def company_esg(ticker: str) -> dict:
 
 @router.get("/api/v1/companies/{ticker}/osint")
 def company_osint(ticker: str, months: Annotated[int, Query(ge=1, le=120)] = 36) -> list[dict]:
-    del months  # Fixture events lack precise dates for reliable filtering.
-    return company_events(ticker)
+    cutoff = date.today() - timedelta(days=months * 30)
+    today = date.today()
+    selected = []
+    for event in company_events(ticker):
+        note = str(event.get("dateNote") or "")
+        exact = re.search(r"(\d{2})/(\d{2})/(\d{4})", note)
+        if exact:
+            try:
+                event_date = date(int(exact.group(3)), int(exact.group(2)), int(exact.group(1)))
+                if cutoff <= event_date <= today:
+                    selected.append(event)
+            except ValueError:
+                continue
+            continue
+        event_year = int(event.get("decisionYear") or 0)
+        if event_year and event_year >= cutoff.year and event_year <= today.year:
+            selected.append(event)
+    return selected

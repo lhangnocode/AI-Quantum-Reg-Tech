@@ -12,6 +12,7 @@ import { ZoneBadge } from "@/components/dashboard/ZoneBadge";
 import { InfoTip } from "@/components/common/InfoTip";
 import { formatNumber, formatText } from "@/lib/format";
 import { ALTMAN_FORMULA } from "@/lib/risk";
+import { getOsintPeriod } from "@/lib/osint-period";
 import { ExtractionTable } from "./ExtractionTable";
 import type { PrivateAnalysis } from "@/lib/types";
 
@@ -20,7 +21,7 @@ export function PrivateResult({ result }: { result: PrivateAnalysis }) {
   const { company, zscore, esg, events, posint } = result;
   const total =
     typeof zscore.rfinBase === "number" && typeof posint === "number" ? zscore.rfinBase + posint : "TODO";
-  const endYear = typeof company.fiscalYear === "number" ? company.fiscalYear : new Date().getFullYear();
+  const osintPeriod = getOsintPeriod();
 
   return (
     <div className="space-y-4">
@@ -77,7 +78,7 @@ export function PrivateResult({ result }: { result: PrivateAnalysis }) {
       </div>
 
       <DashboardCard title="Dòng thời gian OSINT" description="36 tháng gần nhất">
-        <OsintTimeline events={events} endYear={endYear} />
+        <OsintTimeline events={events} fromDate={osintPeriod.fromDate} toDate={osintPeriod.toDate} />
       </DashboardCard>
 
       <DashboardCard title="Tổng hợp rủi ro tài chính" description="RFin,Base + POSINT = RFin,Total">

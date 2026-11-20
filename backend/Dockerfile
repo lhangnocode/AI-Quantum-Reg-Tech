@@ -24,6 +24,7 @@ RUN pip install --no-cache-dir -r /app/backend/requirements.txt \
 # Secrets come from the host's env/secret manager at runtime (variables: backend/.env.example) – never COPY a .env file.
 COPY backend/app /app/backend/app
 COPY --from=data /src/data/generated /app/data/generated
+COPY data/market_prices_monthly.csv /app/data/market_prices_monthly.csv
 RUN mkdir -p /app/backend \
     && chown -R appuser:appuser /app/backend /app/data
 
